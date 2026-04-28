@@ -3,8 +3,8 @@ import React, {
   createContext,
   useCallback,
   useContext,
-  useEffect,
   useMemo,
+  useRef,
   useState,
 } from 'react';
 import { api } from './api';
@@ -33,6 +33,10 @@ export function CartProvider({ children }: { children: ReactNode }) {
   const [cart, setCart] = useState<Cart | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  // Holds the in-flight createCart() promise so two rapid addItem taps don't mint two carts.
+  const cartCreation = useRef<Promise<Cart> | null>(null);
+  const cartRef = useRef<Cart | null>(null);
+  cartRef.current = cart;
 
   const wrap = useCallback(async <T,>(fn: () => Promise<T>): Promise<T | undefined> => {
     setLoading(true);
@@ -62,17 +66,24 @@ export function CartProvider({ children }: { children: ReactNode }) {
     });
   }, [cart, wrap]);
 
-  const ensureCart = useCallback(async (): Promise<Cart | null> => {
-    if (cart) return cart;
-    const c = await api.createCart();
-    setCart(c);
-    return c;
-  }, [cart]);
+  const ensureCart = useCallback(async (): Promise<Cart> => {
+    if (cartRef.current) return cartRef.current;
+    if (!cartCreation.current) {
+      cartCreation.current = api.createCart().then((c) => {
+        setCart(c);
+        return c;
+      });
+      cartCreation.current.finally(() => {
+        cartCreation.current = null;
+      });
+    }
+    return cartCreation.current;
+  }, []);
 
   const addItem = useCallback(
     async (productId: string, quantity = 1) => {
       await wrap(async () => {
-        const c = (await ensureCart())!;
+        const c = await ensureCart();
         const updated = await api.addItem(c.id, productId, quantity);
         setCart(updated);
       });
