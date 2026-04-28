@@ -39,6 +39,29 @@ describe('ProductDetailScreen', () => {
     expect(api.addItem).toHaveBeenCalledWith('cart-1', 'p-coffee-beans', 1);
   });
 
+  it('decreases displayed stock when Add to cart is pressed', async () => {
+    const baseProduct = {
+      id: 'p-coffee-beans',
+      name: 'Coffee Beans',
+      description: 'Single-origin coffee.',
+      category: 'pantry',
+      priceCents: 1299,
+      stock: 10,
+    };
+    api.getProduct
+      .mockResolvedValueOnce(baseProduct)
+      .mockResolvedValueOnce({ ...baseProduct, stock: 9 });
+
+    const { findByText, getByLabelText } = render(<Harness productId="p-coffee-beans" />);
+    expect(await findByText('10 in stock')).toBeTruthy();
+
+    fireEvent.press(getByLabelText('Add to cart'));
+
+    await waitFor(() => expect(api.addItem).toHaveBeenCalledTimes(1));
+    expect(await findByText('9 in stock')).toBeTruthy();
+    expect(api.getProduct).toHaveBeenCalledTimes(2);
+  });
+
   it('disables Add to cart when product is out of stock', async () => {
     const { findByText, getByLabelText } = render(<Harness productId="p-oat-milk" />);
     expect(await findByText('Oat Milk')).toBeTruthy();
