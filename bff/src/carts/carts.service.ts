@@ -88,17 +88,23 @@ export class CartsService implements OnModuleDestroy {
     return this.updateItem(cartId, productId, 0);
   }
 
-  /** Releases all reservations for a cart. Used by checkout (success or fail) and expiry. */
-  releaseReservations(cartId: string, reason: 'checkout' | 'expiry'): void {
+  /**
+   * Use this when stock should return to inventory — i.e. on cart EXPIRY only. The product was
+   * never sold, so the held units go back. Not called for successful checkout (see markCheckedOut).
+   */
+  releaseReservations(cartId: string, reason: 'expiry'): void {
     const cart = this.carts.get(cartId);
     if (!cart || cart.status !== 'active') return;
     for (const line of cart.lines) {
       this.products.releaseStock(line.productId, line.quantity);
     }
-    cart.status = reason === 'checkout' ? 'checked_out' : 'expired';
+    cart.status = reason === 'expiry' ? 'expired' : 'checked_out';
   }
 
-  /** Marks a cart as checked out and clears any held lines. Stock has already moved to fulfilled. */
+  /**
+   * Use this on SUCCESSFUL checkout. The held stock has been "sold" — we keep the decrement
+   * and just transition the cart out of the active state so it can't be mutated further.
+   */
   markCheckedOut(cartId: string): void {
     const cart = this.carts.get(cartId);
     if (!cart) return;
