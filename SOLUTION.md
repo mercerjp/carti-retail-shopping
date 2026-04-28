@@ -209,6 +209,8 @@ Per-screen async state (catalogue list, product detail) lives in the screen with
 - `format.ts` for currency, `api.ts` for the typed fetch client.
 - Vanilla `StyleSheet` — no UI library.
 - Interactive elements have `accessibilityRole`/`accessibilityLabel`.
+- `ProductListScreen` refetches via `useFocusEffect` so stock reflects the latest state after returning from checkout.
+- `ProductDetailScreen` decrements its displayed stock optimistically the moment **Add to cart** is pressed, then refetches the product to reconcile with the BFF (which reserves stock server-side on add). The user sees an instant response; any divergence is corrected by the refetch.
 
 ### UI / Branding
 

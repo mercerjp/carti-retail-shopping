@@ -1,5 +1,5 @@
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import {
   ActivityIndicator,
   Pressable,
@@ -24,6 +24,15 @@ export function ProductDetailScreen({ route, navigation }: Props) {
   const { addItem, error: cartError, loading, expiredNotice } = useCart();
   const [adding, setAdding] = useState(false);
   const [added, setAdded] = useState(false);
+
+  const loadProduct = useCallback(async () => {
+    try {
+      const p = await api.getProduct(productId);
+      setProduct(p);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Failed to load');
+    }
+  }, [productId]);
 
   useEffect(() => {
     let cancelled = false;
@@ -55,9 +64,14 @@ export function ProductDetailScreen({ route, navigation }: Props) {
   const onAdd = async () => {
     setAdding(true);
     setAdded(false);
-    await addItem(product.id, 1);
-    setAdding(false);
-    setAdded(true);
+    setProduct((p) => (p ? { ...p, stock: Math.max(0, p.stock - 1) } : p));
+    try {
+      await addItem(product.id, 1);
+      setAdded(true);
+    } finally {
+      setAdding(false);
+      void loadProduct();
+    }
   };
 
   const outOfStock = product.stock === 0;
