@@ -28,15 +28,8 @@ export function ProductDetailScreen({ route, navigation }: Props) {
   }, [productId]);
 
   useEffect(() => {
-    let cancelled = false;
-    api
-      .getProduct(productId)
-      .then((p) => !cancelled && setProduct(p))
-      .catch((e) => !cancelled && setError(e instanceof Error ? e.message : 'Failed to load'));
-    return () => {
-      cancelled = true;
-    };
-  }, [productId]);
+    void loadProduct();
+  }, [loadProduct]);
 
   if (error) {
     return (
@@ -151,5 +144,5 @@ const styles = StyleSheet.create({
   btnText: { color: '#FFFFFF', fontWeight: '700', fontSize: 16, letterSpacing: 0.3 },
   error: { color: theme.colors.danger, textAlign: 'center' },
   viewCart: { color: theme.colors.accent, textAlign: 'center', fontWeight: '700' },
-  notice: { color: '#78350f', textAlign: 'center' },
+  notice: { color: theme.colors.warningText, textAlign: 'center' },
 });

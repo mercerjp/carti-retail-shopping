@@ -14,6 +14,9 @@ const colors = {
   success: '#0F7A3D',
   danger: '#B00020',
   disabled: '#C9C9C9',
+  warningBg: '#FEF3C7',
+  warningBorder: '#FCD34D',
+  warningText: '#78350F',
 } as const;
 
 const spacing = {
