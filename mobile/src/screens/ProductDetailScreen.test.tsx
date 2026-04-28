@@ -62,6 +62,32 @@ describe('ProductDetailScreen', () => {
     expect(api.getProduct).toHaveBeenCalledTimes(2);
   });
 
+  it('reconciles displayed stock when Add to cart fails', async () => {
+    const baseProduct = {
+      id: 'p-coffee-beans',
+      name: 'Coffee Beans',
+      description: 'Single-origin coffee.',
+      category: 'pantry',
+      priceCents: 1299,
+      stock: 10,
+    };
+    api.getProduct
+      .mockResolvedValueOnce(baseProduct)
+      .mockResolvedValueOnce({ ...baseProduct, stock: 10 });
+    api.addItem.mockRejectedValueOnce(new Error('Insufficient stock'));
+
+    const { findByText, getByLabelText } = render(<Harness productId="p-coffee-beans" />);
+    expect(await findByText('10 in stock')).toBeTruthy();
+
+    fireEvent.press(getByLabelText('Add to cart'));
+
+    // Optimistic decrement flips to 9, then refetch reconciles back to 10.
+    await waitFor(() => expect(api.getProduct).toHaveBeenCalledTimes(2));
+    expect(await findByText('10 in stock')).toBeTruthy();
+    // Button is no longer stuck in the "Adding…" state.
+    expect(await findByText('Add to cart')).toBeTruthy();
+  });
+
   it('disables Add to cart when product is out of stock', async () => {
     const { findByText, getByLabelText } = render(<Harness productId="p-oat-milk" />);
     expect(await findByText('Oat Milk')).toBeTruthy();

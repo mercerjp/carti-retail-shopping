@@ -35,8 +35,15 @@ export function ProductDetailScreen({ route, navigation }: Props) {
   }, [productId]);
 
   useEffect(() => {
-    void loadProduct();
-  }, [loadProduct]);
+    let cancelled = false;
+    api
+      .getProduct(productId)
+      .then((p) => !cancelled && setProduct(p))
+      .catch((e) => !cancelled && setError(e instanceof Error ? e.message : 'Failed to load'));
+    return () => {
+      cancelled = true;
+    };
+  }, [productId]);
 
   if (error) {
     return (
@@ -58,10 +65,13 @@ export function ProductDetailScreen({ route, navigation }: Props) {
     setAdding(true);
     setAdded(false);
     setProduct((p) => (p ? { ...p, stock: Math.max(0, p.stock - 1) } : p));
-    await addItem(product.id, 1);
-    setAdding(false);
-    setAdded(true);
-    void loadProduct();
+    try {
+      await addItem(product.id, 1);
+      setAdded(true);
+    } finally {
+      setAdding(false);
+      void loadProduct();
+    }
   };
 
   const outOfStock = product.stock === 0;
