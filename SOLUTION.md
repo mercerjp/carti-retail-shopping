@@ -246,7 +246,7 @@ The fetch client parses BFF error bodies and rethrows with the server's message.
 
 ESLint and Prettier are wired up across both workspaces, with a single shared `.prettierrc` at the repo root so BFF and mobile format identically.
 
-- **`bff/`** — legacy `.eslintrc.js` extending `eslint:recommended`, `@typescript-eslint/recommended`, and `prettier` (to disable formatting-related rules). Pinned to ESLint 8 + typescript-eslint 7 to match the TypeScript 5.5 / Nest 10 era.
+- **`bff/`** — legacy `.eslintrc.js` extending `eslint:recommended`, `@typescript-eslint/recommended`, and `prettier` (to disable formatting-related rules). Pinned to ESLint 8 + typescript-eslint 7. (TypeScript itself is on 6.x — typescript-eslint 7's `<6.1.0` peer range still admits it.)
 - **`mobile/`** — extends `eslint-config-expo` (canonical for Expo SDK 51) plus `prettier`. Test files relax `import/first` since the codebase intentionally imports modules after `jest.mock(...)` calls so the mock registers first.
 - **Root** — `prettier` is a root devDependency; `npm run format` / `npm run format:check` operate over the whole tree.
 
