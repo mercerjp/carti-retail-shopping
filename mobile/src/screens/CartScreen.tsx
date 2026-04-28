@@ -247,14 +247,14 @@ const styles = StyleSheet.create({
   disabled: { backgroundColor: theme.colors.disabled },
   checkoutText: { color: '#FFFFFF', fontWeight: '700', fontSize: 16, letterSpacing: 0.3 },
   banner: {
-    backgroundColor: '#fef3c7',
+    backgroundColor: theme.colors.warningBg,
     borderBottomWidth: 1,
-    borderBottomColor: '#fcd34d',
+    borderBottomColor: theme.colors.warningBorder,
     padding: theme.spacing.md,
     flexDirection: 'row',
     alignItems: 'center',
     gap: theme.spacing.md,
   },
-  bannerText: { flex: 1, color: '#78350f', fontSize: 14 },
-  bannerDismiss: { color: '#78350f', fontWeight: '700' },
+  bannerText: { flex: 1, color: theme.colors.warningText, fontSize: 14 },
+  bannerDismiss: { color: theme.colors.warningText, fontWeight: '700' },
 });
