@@ -15,6 +15,7 @@ import { useCart } from '../CartContext';
 import { CartTimer } from '../components/CartTimer';
 import { formatGBP } from '../format';
 import { RootStackParamList } from '../navigation';
+import { theme } from '../theme';
 import { Product } from '../types';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'ProductList'>;
@@ -67,7 +68,7 @@ export function ProductListScreen({ navigation }: Props) {
   if (!products && !error) {
     return (
       <View style={styles.center}>
-        <ActivityIndicator />
+        <ActivityIndicator color={theme.colors.ink} />
       </View>
     );
   }
@@ -113,24 +114,31 @@ function cartCount(lines: { quantity: number }[]): number {
 }
 
 const styles = StyleSheet.create({
-  center: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: 24 },
-  list: { padding: 16, gap: 12 },
-  row: {
-    backgroundColor: '#fff',
-    borderRadius: 12,
-    padding: 16,
-    borderWidth: 1,
-    borderColor: '#e5e7eb',
+  center: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: theme.spacing.xl,
+    backgroundColor: theme.colors.canvas,
   },
-  rowPressed: { backgroundColor: '#f3f4f6' },
-  name: { fontSize: 16, fontWeight: '600', marginBottom: 6 },
-  metaRow: { flexDirection: 'row', justifyContent: 'space-between' },
-  price: { fontSize: 16 },
-  stock: { color: '#16a34a' },
-  oos: { color: '#b91c1c', fontWeight: '600' },
-  error: { color: '#b91c1c', textAlign: 'center', marginBottom: 12 },
-  retry: { padding: 12 },
-  retryText: { color: '#2563eb', fontWeight: '600' },
-  cartLink: { color: '#2563eb', fontWeight: '600', marginRight: 8 },
+  list: { padding: theme.spacing.lg, gap: theme.spacing.md },
+  row: {
+    backgroundColor: theme.colors.surface,
+    borderRadius: theme.radii.lg,
+    padding: theme.spacing.lg,
+    borderWidth: 1,
+    borderColor: theme.colors.border,
+    ...theme.shadows.card,
+  },
+  rowPressed: { backgroundColor: theme.colors.canvas },
+  name: { ...theme.typography.h2, marginBottom: theme.spacing.xs },
+  metaRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
+  price: { ...theme.typography.price },
+  stock: { ...theme.typography.caption, color: theme.colors.success, fontWeight: '600' },
+  oos: { ...theme.typography.caption, color: theme.colors.danger, fontWeight: '700' },
+  error: { color: theme.colors.danger, textAlign: 'center', marginBottom: theme.spacing.md },
+  retry: { padding: theme.spacing.md },
+  retryText: { color: theme.colors.accent, fontWeight: '700' },
+  cartLink: { color: theme.colors.surface, fontWeight: '700', marginRight: theme.spacing.sm },
   headerRight: { flexDirection: 'row', alignItems: 'center' },
 });

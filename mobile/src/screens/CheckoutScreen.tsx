@@ -3,6 +3,7 @@ import React from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { formatGBP } from '../format';
 import { RootStackParamList } from '../navigation';
+import { theme } from '../theme';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'Checkout'>;
 
@@ -45,7 +46,9 @@ export function CheckoutScreen({ route, navigation }: Props) {
 
         {order.discounts.length > 0 && (
           <>
-            <Text style={[styles.sectionTitle, { marginTop: 12 }]}>Discounts applied</Text>
+            <Text style={[styles.sectionTitle, { marginTop: theme.spacing.md }]}>
+              Discounts applied
+            </Text>
             {order.discounts.map((d) => (
               <View key={d.discountId} style={styles.lineRow}>
                 <Text style={styles.discountName}>{d.name}</Text>
@@ -77,38 +80,64 @@ export function CheckoutScreen({ route, navigation }: Props) {
 }
 
 const styles = StyleSheet.create({
-  container: { padding: 24, gap: 16 },
-  center: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: 24, gap: 12 },
-  title: { fontSize: 26, fontWeight: '700' },
-  orderId: { color: '#6b7280' },
-  section: {
-    backgroundColor: '#fff',
-    borderRadius: 12,
-    padding: 16,
-    borderWidth: 1,
-    borderColor: '#e5e7eb',
+  container: {
+    padding: theme.spacing.lg,
+    gap: theme.spacing.lg,
+    backgroundColor: theme.colors.canvas,
+    flexGrow: 1,
   },
-  sectionTitle: { fontSize: 14, color: '#6b7280', marginBottom: 8, textTransform: 'uppercase' },
-  lineRow: { flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 4 },
-  lineName: { fontSize: 15, flex: 1 },
-  lineTotal: { fontSize: 15 },
-  muted: { color: '#6b7280' },
-  totalRow: { flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 4 },
-  totalLabel: { fontSize: 15 },
-  totalValue: { fontSize: 15 },
-  discountName: { color: '#16a34a', flex: 1 },
-  discountAmount: { color: '#16a34a' },
-  grandRow: { borderTopWidth: 1, borderTopColor: '#e5e7eb', paddingTop: 8, marginTop: 4 },
-  grandLabel: { fontSize: 18, fontWeight: '700' },
-  grandValue: { fontSize: 18, fontWeight: '700' },
+  center: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: theme.spacing.xl,
+    gap: theme.spacing.md,
+    backgroundColor: theme.colors.canvas,
+  },
+  title: { ...theme.typography.display },
+  orderId: { ...theme.typography.caption, color: theme.colors.textMuted },
+  section: {
+    backgroundColor: theme.colors.surface,
+    borderRadius: theme.radii.lg,
+    padding: theme.spacing.lg,
+    borderWidth: 1,
+    borderColor: theme.colors.border,
+    ...theme.shadows.card,
+  },
+  sectionTitle: { ...theme.typography.label, marginBottom: theme.spacing.sm },
+  lineRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    paddingVertical: theme.spacing.xs,
+  },
+  lineName: { ...theme.typography.body, flex: 1 },
+  lineTotal: { ...theme.typography.body },
+  muted: { color: theme.colors.textMuted },
+  totalRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    paddingVertical: theme.spacing.xs,
+  },
+  totalLabel: { ...theme.typography.body },
+  totalValue: { ...theme.typography.body },
+  discountName: { color: theme.colors.success, flex: 1, fontWeight: '600' },
+  discountAmount: { color: theme.colors.success, fontWeight: '600' },
+  grandRow: {
+    borderTopWidth: 1,
+    borderTopColor: theme.colors.border,
+    paddingTop: theme.spacing.sm,
+    marginTop: theme.spacing.xs,
+  },
+  grandLabel: { ...theme.typography.h1, fontSize: 18 },
+  grandValue: { ...theme.typography.h1, fontSize: 20, color: theme.colors.accent },
   btn: {
-    backgroundColor: '#111827',
-    paddingVertical: 14,
-    borderRadius: 10,
+    backgroundColor: theme.colors.ink,
+    paddingVertical: theme.spacing.lg,
+    borderRadius: theme.radii.md,
     alignItems: 'center',
   },
-  btnPressed: { backgroundColor: '#374151' },
-  btnText: { color: '#fff', fontWeight: '600', fontSize: 16 },
-  error: { color: '#b91c1c' },
-  link: { color: '#2563eb', fontWeight: '600' },
+  btnPressed: { backgroundColor: theme.colors.borderStrong, opacity: 0.9 },
+  btnText: { color: '#FFFFFF', fontWeight: '700', fontSize: 16, letterSpacing: 0.3 },
+  error: { color: theme.colors.danger },
+  link: { color: theme.colors.accent, fontWeight: '700' },
 });

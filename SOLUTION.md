@@ -1,20 +1,20 @@
 # SOLUTION
 
-A retail shopping experience built as two coupled apps in one repository:
+A retail shopping experience delivered as two apps in one repo:
 
-- **`bff/`** — NestJS Backend-For-Frontend. In-memory state, exposes `/api`.
-- **`mobile/`** — React Native (Expo) client. Four screens, native-stack navigation.
+- **`bff/`** — NestJS Backend-for-Frontend, in-memory state, exposes `/api`.
+- **`mobile/`** — React Native (Expo) client.
 
-This document covers running each side, the test suite, and the design decisions that aren't obvious from reading the code.
+The repo is an npm workspaces monorepo so a single `npm install` at the root sets up both sides.
 
 ---
 
-## Run
+## How to run
 
-### Prereqs
+### Prerequisites
 
 - Node 18+ (tested on 20)
-- `npm` 10+
+- npm 10+
 - For mobile: Expo Go on a phone, or an iOS Simulator / Android Emulator
 
 ### Install
@@ -25,46 +25,29 @@ From the repo root:
 npm install --workspaces --include-workspace-root
 ```
 
-This installs both workspaces. Alternatively `cd bff && npm install` and `cd mobile && npm install` separately.
-
-### BFF
+### Run the BFF
 
 ```bash
 cd bff
-npm run start:dev    # watch mode on http://localhost:3000
+npm run start:dev    # http://localhost:3000, prefix /api
 ```
 
-Endpoints:
-
-| Method | Path                                         | Purpose                       |
-| ------ | -------------------------------------------- | ----------------------------- |
-| GET    | `/api/products`                              | List catalogue + stock        |
-| GET    | `/api/products/:id`                          | Single product                |
-| GET    | `/api/discounts`                             | Active discounts              |
-| GET    | `/api/discounts/:id`                         | Single discount               |
-| POST   | `/api/carts`                                 | Create cart                   |
-| GET    | `/api/carts/:id`                             | Get cart                      |
-| POST   | `/api/carts/:id/items`                       | Add item `{productId, qty}`   |
-| PATCH  | `/api/carts/:id/items/:productId`            | Set quantity (0 removes)      |
-| DELETE | `/api/carts/:id/items/:productId`            | Remove line                   |
-| POST   | `/api/carts/:id/checkout`                    | Check out, returns OrderSummary |
-
-### Mobile
+### Run the mobile app
 
 ```bash
 cd mobile
 npm start            # opens Expo
 ```
 
-The BFF base URL is read in this order:
+The BFF base URL is resolved in this order:
 
 1. `EXPO_PUBLIC_API_BASE_URL` env var
 2. `expo.extra.apiBaseUrl` in `app.json`
 3. `http://localhost:3000/api` fallback
 
-Set `EXPO_PUBLIC_API_BASE_URL` (e.g. via a `.env` file or shell export) to override. **On a real device** the URL must reach your laptop's LAN IP, not `localhost` — set `EXPO_PUBLIC_API_BASE_URL=http://192.168.x.x:3000/api`.
+On a real device set `EXPO_PUBLIC_API_BASE_URL=http://<your-LAN-IP>:3000/api` — `localhost` won't reach your laptop from the phone.
 
-### Tests
+### Run the tests
 
 From the repo root:
 
@@ -72,113 +55,168 @@ From the repo root:
 npm test             # runs both workspaces
 ```
 
-Or individually:
+Or per workspace:
 
 ```bash
-npm run test:bff     # 37 unit + 5 e2e
-npm run test:mobile  # 14 RN + hook tests
+npm run test:bff
+npm run test:mobile
 ```
 
 ---
 
-## Assumptions
+## API surface
 
-1. **Single user, no auth.** The BFF mints cart ids and trusts whoever holds one. Spec says no auth — fine.
-2. **In-memory only.** State is lost on restart. Stock, carts, and reservations all live in `Map`s. Catalogue is reseeded on boot.
-3. **Reservations decrement available stock at add-to-cart time** rather than tracking a separate `reserved` counter. Trade-off discussed below.
-4. **Single currency (GBP).** Hardcoded in OrderSummary.
-5. **Sessionless.** No cookie/JWT — the cart id is the only identifier. The mobile client holds it in React state, so a process kill loses the cart (but the BFF expires it on its own after 2 minutes anyway).
-6. **No real payment.** `POST /carts/:id/checkout` simulates success deterministically given valid state.
+| Method | Path                                | Purpose                          |
+| ------ | ----------------------------------- | -------------------------------- |
+| GET    | `/api/products`                     | List catalogue with stock        |
+| GET    | `/api/products/:id`                 | Single product                   |
+| GET    | `/api/discounts`                    | List active discounts            |
+| GET    | `/api/discounts/:id`                | Single discount                  |
+| POST   | `/api/carts`                        | Create cart                      |
+| GET    | `/api/carts/:id`                    | Get cart                         |
+| POST   | `/api/carts/:id/items`              | Add item `{productId, quantity}` |
+| PATCH  | `/api/carts/:id/items/:productId`   | Set quantity (0 removes)         |
+| DELETE | `/api/carts/:id/items/:productId`   | Remove line                      |
+| POST   | `/api/carts/:id/checkout`           | Checkout, returns OrderSummary   |
 
 ---
 
-## Discount engine
+## Product catalogue
 
-Four kinds of discount, all evaluated automatically by `DiscountEngine.price()` at checkout:
+Hardcoded seed data in `bff/src/products/products.seed.ts`, loaded into an in-memory `Map` at boot. Stock fields are mutable — they decrease on reserve and increase on release.
 
-| Kind                  | What it does                                                      | Seed example                          |
-| --------------------- | ----------------------------------------------------------------- | ------------------------------------- |
-| `PERCENT_OFF_PRODUCT` | N% off every unit of a specific SKU                               | 20% off coffee beans                  |
-| `BUY_X_GET_Y_FREE`    | For every (X+Y) of an SKU in cart, Y units are free               | Oat milk: 3 for 2 (`buy=2, free=1`)   |
-| `BUNDLE`              | Fixed amount off when all SKUs are present, scaled by min line qty | Coffee + oat milk together: £2 off    |
-| `FIXED_OFF_ORDER`     | Fixed amount off when post-product-discount subtotal ≥ threshold  | £5 off when subtotal ≥ £30            |
+| ID                 | Name                              | Price  | Stock |
+| ------------------ | --------------------------------- | ------ | ----- |
+| `p-coffee-beans`   | Single-Origin Coffee Beans 250g   | £12.99 | 24    |
+| `p-oat-milk`       | Barista Oat Milk 1L               | £2.49  | 60    |
+| `p-sourdough`      | Sourdough Loaf                    | £5.49  | 12    |
+| `p-dark-chocolate` | Dark Chocolate 70% 100g           | £3.99  | 40    |
+| `p-olive-oil`      | Extra Virgin Olive Oil 500ml      | £14.99 | 18    |
+| `p-pasta`          | Bronze-Cut Spaghetti 500g         | £3.29  | 50    |
+| `p-tomato-sauce`   | San Marzano Tomato Sauce 400g     | £4.49  | 0     |
 
-**Order of application matters.** Product-scoped promos run first; the `FIXED_OFF_ORDER` threshold is then checked against the **post-product-discount** subtotal. This avoids a customer triggering "£5 off £30" with discountable items that bring the real spend below £30.
+The `p-tomato-sauce` line ships with stock 0 to make the out-of-stock UI path easy to demo.
 
-The engine is a pure function (`PricingResult` shape: `{subtotalCents, applied[], discountTotalCents, totalCents}`) — easy to unit test, swappable later for a rules service. `Math.max(0, ...)` on the total prevents negative payouts when stacked discounts exceed the subtotal.
+---
+
+## Discount catalogue
+
+Hardcoded seed data in `bff/src/discounts/discounts.seed.ts`. Four promotional kinds, all evaluated automatically at checkout.
+
+| ID                          | Name                          | Kind                  | Effect                                          |
+| --------------------------- | ----------------------------- | --------------------- | ----------------------------------------------- |
+| `d-coffee-20`               | 20% off coffee beans          | `PERCENT_OFF_PRODUCT` | 20% off every unit of `p-coffee-beans`         |
+| `d-oat-milk-3-for-2`        | Oat milk: 3 for 2             | `BUY_X_GET_Y_FREE`    | Buy 2, get 1 free (per group of 3)              |
+| `d-coffee-oatmilk-bundle`   | Coffee & oat milk bundle      | `BUNDLE`              | £2 off per matched pair of coffee + oat milk    |
+| `d-order-5-over-30`         | £5 off when you spend £30     | `FIXED_OFF_ORDER`     | £5 off if post-product-discount subtotal ≥ £30  |
+
+### How promotional discounts work
+
+Pricing is a pure function (`DiscountEngine.price()` in `bff/src/discounts/discount-engine.ts`) that takes cart lines and returns:
+
+```ts
+{ subtotalCents, applied: AppliedDiscount[], discountTotalCents, totalCents }
+```
+
+The four kinds:
+
+- **`PERCENT_OFF_PRODUCT`** — for the line matching `productId`, the discount is `round(lineTotal × percent / 100)`.
+- **`BUY_X_GET_Y_FREE`** — for the matching line, group size is `buyQuantity + freeQuantity`. Free units = `floor(quantity / groupSize) × freeQuantity`. Discount = free units × unit price.
+- **`BUNDLE`** — every product in `productIds` must be present with quantity ≥ 1. Number of bundles = the minimum line quantity across the bundle. Discount = bundles × `amountCents`.
+- **`FIXED_OFF_ORDER`** — flat `amountCents` off if the order subtotal meets `minSubtotalCents`.
+
+**Order of application matters.** Product-scoped promos (`PERCENT_OFF_PRODUCT`, `BUY_X_GET_Y_FREE`, `BUNDLE`) run first. The `FIXED_OFF_ORDER` threshold is evaluated against the **post-product-discount** subtotal, so a customer can't trigger "£5 off £30" with discounted items that bring their real spend below £30. The final total is clamped at `Math.max(0, …)` so stacked discounts can never produce a negative payout.
+
+Only discounts with `active: true` are considered. The list is exposed via `GET /api/discounts` so a UI could surface them, though the mobile app currently shows applied discounts on the order summary only.
+
+---
+
+## Cart lifecycle and stock reservation
+
+The instructions specify three rules. Each is implemented as follows:
+
+### 1. Stock is reserved while a cart is active
+
+When an item is added (`POST /carts/:id/items`) or its quantity raised (`PATCH …/items/:productId`), `ProductsService.reserveStockOrThrow` decrements `Product.stock` by the requested amount. If stock is insufficient the call throws `400` with a human-readable message ("Insufficient stock for Sourdough Loaf: requested 5, available 12") which the mobile app surfaces verbatim.
+
+There is no separate `reserved` counter. The product's `stock` field represents inventory **available to reserve** — held units are invisible to other browsers, which is the desired retail behaviour (you don't advertise inventory that's already spoken for).
+
+Lowering a quantity (`PATCH` with a smaller value) or removing a line releases the difference back to inventory immediately.
+
+Because reservations happen at add-time, **the only place a stock failure can surface is on add/raise**. By the time a line is in the cart, the stock is provably held — checkout cannot fail for stock reasons.
+
+### 2. Reservations are released after 2 minutes of cart inactivity
+
+`CartsService` runs a sweeper every 5 seconds (`setInterval`, `unref`'d so it doesn't keep the process alive). On each tick it walks active carts; any cart whose `lastActivityAt` is more than `RESERVATION_TTL_MS` (= 2 min) in the past is **expired**:
+
+1. Each line's quantity is released back to product inventory.
+2. Cart status flips from `active` → `expired`.
+3. Subsequent mutations / checkout on that cart id throw `400` ("Cart … is expired") so the UI can prompt the user to start a new cart.
+
+`touch(cart)` updates `lastActivityAt` on every successful add/update/remove, so an active shopper isn't penalised. The same sweep also runs on the read paths (`get`, `requireActive`) so an idle reviewer hitting `GET /carts/:id` after 2 minutes sees the expired status without waiting for the next tick.
+
+### 3. Reservations are released on checkout (successful or failed)
+
+- **Successful checkout** — the held units have been "sold", so they stay decremented. `markCheckedOut` flips the cart's status to `checked_out` so it can no longer be mutated; from the cart's perspective the reservation is released (the stock now belongs to the order).
+- **Failed checkout** — the only reachable failure paths are:
+  - Unknown cart id → nothing to release.
+  - Empty cart → no reservations exist.
+  - Cart is `expired` → reservations were already released by the sweeper.
+  - Cart is `checked_out` → reservations were already settled by the prior successful checkout.
+
+Stock can never be insufficient at checkout because of rule 1, so there is no "stock-failure at checkout" branch to handle. The order summary returned on success contains: order id, cart id, placed-at timestamp, line items with unit and line totals, applied discounts, subtotal, discount total, grand total, and currency.
 
 ---
 
 ## Data persistence
 
-In-memory `Map<id, T>`. Each domain has its own service that owns its map:
+In-memory only, per the constraints. Each domain has its own service that owns a `Map<id, T>`:
 
-- `ProductsService` — catalogue + stock primitives (`reserveStockOrThrow`, `releaseStock`)
-- `DiscountsService` — discount catalogue
-- `CartsService` — carts keyed by uuid
+- `ProductsService` — catalogue + stock primitives.
+- `DiscountsService` — discount catalogue.
+- `CartsService` — carts keyed by uuid.
 
-The reason for the centralised Products store is the **stock model**:
-
-- "Available stock" = the `stock` field on Product.
-- Reserve = decrement; release = increment.
-- A reservation is just held inventory — there's no separate `reserved` counter.
-
-This means another browser browsing the catalogue while item A is in someone's cart sees stock minus the held units, which is the desired retail behaviour (you don't want to advertise inventory that's already spoken for).
-
-The read-modify-write `stock - quantity` pattern is safe under Node's single-threaded event loop because no `await` separates the read from the write inside `reserveStockOrThrow`. A multi-process deployment would need actual atomic decrements (Redis `DECRBY`, SQL `UPDATE ... WHERE stock >= ?`); the take-home runs single-process.
-
-### Reservation lifecycle (the 2-minute TTL)
-
-`CartsService` runs a sweeper every 5 seconds (`setInterval`, `unref`'d so it doesn't block process exit). On each tick it walks the active carts; any cart whose `lastActivityAt` is more than `RESERVATION_TTL_MS` (2 min) in the past is **expired**:
-
-1. Each line's `quantity` is released back to product inventory.
-2. Cart status flips to `'expired'`.
-3. Subsequent mutations on that cart id throw 400 ("Cart X is expired") with a clear message.
-
-`touch(cart)` resets `lastActivityAt` on every successful add/update/remove, so an active shopper isn't penalised. `markCheckedOut` is the success path: stock stays decremented (the items were sold), cart transitions out of `active` so it can't be mutated.
-
-Every `Cart` returned to a caller carries an `expiresAt: number` (epoch ms, computed as `lastActivityAt + RESERVATION_TTL_MS`) so the client can drive a visible countdown without polling. The field is derived in a single `view()` helper so it can never drift from the BFF's own TTL constant.
+The product and discount catalogues are reseeded on every boot from the `*.seed.ts` files. Cart state is created on demand and lost on restart. Read-modify-write on `Product.stock` is safe under Node's single-threaded event loop because no `await` separates the read from the write inside `reserveStockOrThrow`. A multi-process deployment would need an atomic decrement (Redis `DECRBY`, SQL `UPDATE … WHERE stock >= ?`); the take-home runs single-process.
 
 ### Mobile cart-expiry UX
 
-- A `<CartTimer />` component is mounted in the header of `ProductList`, `ProductDetail`, and `Cart` (not Checkout). It renders `mm:ss` until `cart.expiresAt`, driven by a 1-second ticker in `CartProvider` that only runs while a cart exists.
+Every `Cart` returned by the BFF carries `expiresAt: number` (epoch ms, computed as `lastActivityAt + RESERVATION_TTL_MS`) so the client can drive a visible countdown without polling. The field is derived in a single `view()` helper so it can never drift from the BFF's own TTL constant.
+
+- A `<CartTimer />` component is mounted in the header of `ProductList`, `ProductDetail`, and `Cart` (not Checkout). It renders `mm:ss` until `cart.expiresAt`, driven by a 1-second ticker in `CartProvider` that only runs while a cart exists. It turns red below 30s.
 - Expiry is detected two ways:
   - **Proactive** — the ticker observes `Date.now() >= cart.expiresAt`.
   - **Reactive** — any mutation that rejects with `/is expired/i`.
 - On either path the provider clears the local `cart`, sets `expiredNotice`, and immediately auto-mints a new cart via the existing in-flight `createCart` ref so a proactive + reactive collision can't double-mint. **Previously-held line items are not restored** — the BFF has already released their reservations and the catalogue may have shifted, so re-adding is a deliberate user action.
-- `CartScreen` shows a dismissible yellow banner sourced from `expiredNotice`. `ProductDetailScreen` swaps its raw cart-error line for the same notice when an `addItem` fails on an expired cart, since the context has already auto-recreated.
-
-### Stock-failure path
-
-A naïve design would check stock at checkout. Because we reserve at add-to-cart time, **the only place a stock failure can surface is `POST /carts/:id/items`** (or `PATCH` raising the qty). Once a line is in the cart, the inventory is provably held. Checkout failures reduce to: unknown cart, empty cart, expired/already-checked-out cart. The mobile UI shows the BFF's error message verbatim ("Insufficient stock for Sourdough Loaf: requested 5, available 12") on the Detail / Cart screens.
+- `CartScreen` shows a dismissible banner sourced from `expiredNotice`. `ProductDetailScreen` swaps its raw cart-error line for the same notice when an `addItem` fails on an expired cart, since the context has already auto-recreated.
 
 ---
 
-## Mobile: navigation, state, components
+## Mobile app
 
 ### Navigation
 
-`@react-navigation/native-stack` with a typed `RootStackParamList`. Four screens, no tabs/drawers — a stack is enough for the user journey (List → Detail → Cart → Checkout, with `popToTop()` from Checkout).
+`@react-navigation/native-stack` with a typed `RootStackParamList`. Four screens — Product List → Product Detail → Cart → Checkout — chained as a stack with `popToTop()` from Checkout back to the list. A stack is sufficient for this linear flow; tabs/drawers would be overkill.
 
 ### State management
 
-A single `CartProvider` context. No Redux, no Zustand — overkill for one cart. The provider holds:
+A single `CartProvider` context. No Redux/Zustand — overkill for one cart. The provider holds the BFF's cart response as the source of truth, plus loading/error state for the in-flight mutation. Cart creation is **lazy** — `POST /carts` is only fired the first time the user adds something, so just browsing doesn't burn a reservation. An in-flight `createCart` promise is held in a `useRef` so two rapid taps cannot mint two carts.
 
-- `cart: Cart | null` (BFF response, source of truth)
-- `loading`, `error` for the in-flight mutation
-- A `useRef`-held in-flight `createCart` promise so two rapid `addItem` taps **don't mint two carts** (real bug caught in PR review #6)
-
-Cart creation is **lazy**: we don't `POST /carts` until the user actually adds something, so browsing doesn't burn reservations.
-
-Per-screen async state (e.g. fetching the product list, loading product details) lives in the screen with `useState`/`useEffect`. There's no global cache — at this size the round-trips aren't worth React Query's footprint.
+Per-screen async state (catalogue list, product detail) lives in the screen with `useState`/`useEffect`. `ProductListScreen` refetches via `useFocusEffect` so stock reflects post-checkout state when the screen is revealed from the back stack.
 
 ### Component architecture
 
-- Screens consume `useCart()` for cart actions and call `api` directly for catalogue reads.
-- `format.ts` for currency, `api.ts` for the typed fetch client. No styled component library — vanilla `StyleSheet` to keep the bundle small.
-- All interactive elements have `accessibilityRole`/`accessibilityLabel`.
-- Defensive UX: `−` is disabled at qty 1 (use the dedicated Remove button), `+` is disabled when no available stock remains, the empty-cart branch only renders if there's truly no cart or no lines, and the post-checkout navigation happens **before** the local cart state clears so the empty-cart screen never flashes.
-- `ProductListScreen` refetches via `useFocusEffect` so stock reflects the latest state after returning from checkout (the screen stays mounted in the back stack, so a mount-only effect would show stale stock).
+- Screens consume `useCart()` for cart actions and call the typed `api` module directly for catalogue reads.
+- `format.ts` for currency, `api.ts` for the typed fetch client.
+- Vanilla `StyleSheet` — no UI library.
+- Interactive elements have `accessibilityRole`/`accessibilityLabel`.
+
+### UI / Branding
+
+A Legal & General-inspired visual style is implemented through a centralised theme module at `mobile/src/theme.ts`. It exports a frozen `theme` object with `colors`, `spacing`, `radii`, `typography`, and `shadows` tokens. The palette is anchored on ink black (`#000000`) for primary surfaces and CTAs with an L&G magenta accent (`#E4007F`) for links, secondary actions, and the checkout grand total. Cards use a white surface on a light-grey canvas with subtle elevation. Every screen and `App.tsx` consume tokens from this module — no ad-hoc hex values remain in screen styles. No new dependencies were added; styling is plain `StyleSheet`.
+
+### Error handling
+
+The fetch client parses BFF error bodies and rethrows with the server's message. Screens render that message inline (e.g. on the Product Detail / Cart screens for stock errors, on Checkout for any failure) — never a raw error object or a blank screen.
 
 ---
 
@@ -186,42 +224,27 @@ Per-screen async state (e.g. fetching the product list, loading product details)
 
 ### BFF
 
-- **Unit tests** (`*.spec.ts` colocated with services) — pure logic: discount engine math, stock primitives, cart TTL behaviour, checkout flow.
-- **e2e tests** (`bff/test/app.e2e-spec.ts`) — boots the full Nest app with `supertest`, exercises HTTP. Notably asserts `GET /products/:id` stock decrements after a successful checkout (locking in the spec line "stock levels update at runtime as carts check out").
+- **Unit tests** (`*.spec.ts` colocated with services) cover the discount engine math, stock primitives, cart TTL behaviour, and the checkout flow.
+- **e2e tests** (`bff/test/app.e2e-spec.ts`) boot the full Nest app via `supertest` and exercise the HTTP surface, including verifying that `GET /products/:id` shows decremented stock after a successful checkout.
 
-`npm test` in `bff/` runs unit then e2e. 37 + 5 = 42 cases.
+`npm test` in `bff/` runs unit + e2e.
 
 ### Mobile
 
-- `format.test.ts` — pure unit. Normalises NBSP in `Intl.NumberFormat` output for runtime determinism.
-- `CartContext.test.tsx` — hook tests via `@testing-library/react-native`. Locks in lazy creation, the concurrent-addItem dedupe (regression for PR #6's race), error-path surfacing, and quantity accumulation.
-- Per-screen smoke tests for ProductList / ProductDetail / Checkout — render in a test `NavigationContainer`, mock the api module, assert key text and that taps wire through.
-- `__mocks__/api.ts` is a stateful in-memory mock backed by a `Map`, so quantity-merging tests are real, not tautological.
+- `format.test.ts` — pure unit, normalises NBSP from `Intl.NumberFormat` for deterministic asserts.
+- `CartContext.test.tsx` — hook tests via `@testing-library/react-native` covering lazy cart creation, the concurrent-`addItem` dedupe, error surfacing, and quantity merging.
+- Per-screen smoke tests for ProductList / ProductDetail / Checkout — render in a test `NavigationContainer`, mock the api module, assert key text and tap behaviour.
+- `__mocks__/api.ts` is a stateful in-memory mock so quantity-merging assertions are real, not tautological.
 
-14 cases. `npm test` in `mobile/`.
-
-### What I'd add given more time
-
-- Cart screen interaction test (qty +/− under stock cap)
-- BFF concurrent-add stress test (single-process — should still hold)
-- Snapshot of the OrderSummary JSON so any field-shape change is caught
-- Playwright/Detox for a real end-to-end mobile flow
+`npm test` in `mobile/`.
 
 ---
 
-## Repo / process
+## Assumptions
 
-This repo was built incrementally as 8 small PRs (#1–#8), each reviewed by an automated reviewer subagent before merge. The PR comments capture the back-and-forth: at least one substantive bug caught per review (quantity validation in PR #2, race in PR #6, UX bugs in PR #7, test coverage gaps in PR #8).
-
-```
-#1 NestJS scaffold
-#2 Products module + tests
-#3 Discounts engine + tests
-#4 Carts module + 2-min TTL
-#5 Checkout + e2e
-#6 Mobile scaffold + state
-#7 Mobile screens
-#8 Mobile tests
-```
-
-Final commit on `main` adds this SOLUTION.md.
+1. **Single user, no auth.** The BFF mints cart ids and trusts whoever holds one. Per the spec.
+2. **In-memory only.** State is lost on restart; product/discount catalogues are reseeded on boot.
+3. **Reservations decrement live stock at add-time** rather than tracking a separate `reserved` counter — see *Cart lifecycle* for rationale.
+4. **Single currency (GBP).** Hardcoded on the order summary.
+5. **Sessionless.** The cart id is the only identifier and is held in React state on the client.
+6. **Simulated checkout.** No payment integration; a successful checkout deterministically returns an order summary.

@@ -67,9 +67,15 @@ describe('CartTimer', () => {
     expect(getByText('0:09')).toBeTruthy();
   });
 
-  it('exposes an accessibilityLabel describing remaining time', () => {
+  it('exposes an accessibilityLabel describing remaining time (with pluralisation)', () => {
     setCartContext(makeCart(), 75);
     const { getByLabelText } = render(<CartTimer />);
-    expect(getByLabelText('Cart expires in 1 minutes 15 seconds')).toBeTruthy();
+    expect(getByLabelText('Cart expires in 1 minute 15 seconds')).toBeTruthy();
+  });
+
+  it('singularises seconds when exactly one remains', () => {
+    setCartContext(makeCart(), 61);
+    const { getByLabelText } = render(<CartTimer />);
+    expect(getByLabelText('Cart expires in 1 minute 1 second')).toBeTruthy();
   });
 });

@@ -48,21 +48,39 @@ export function CartProvider({ children }: { children: ReactNode }) {
   const cartRef = useRef<Cart | null>(null);
   cartRef.current = cart;
 
+  // Centralised in-flight createCart. Both the lazy add-item path and the auto-recreate
+  // path share this ref so a proactive + reactive collision can never double-mint.
+  // Returns the in-flight promise; callers may await or fire-and-forget. Rejection is
+  // surfaced via setError and then swallowed so the floating promise is not unhandled.
+  const startCartCreation = useCallback((): Promise<Cart> => {
+    if (!cartCreation.current) {
+      const promise = api
+        .createCart()
+        .then((c) => {
+          setCart(c);
+          return c;
+        })
+        .catch((e: unknown) => {
+          setError(e instanceof Error ? e.message : 'Could not start a fresh cart');
+          throw e;
+        })
+        .finally(() => {
+          cartCreation.current = null;
+        });
+      cartCreation.current = promise;
+      promise.catch(() => {
+        /* surfaced via setError above; swallow to avoid unhandled-rejection */
+      });
+    }
+    return cartCreation.current;
+  }, []);
+
   const handleExpiry = useCallback(() => {
     setCart(null);
     setError(null);
     setExpiredNotice(EXPIRED_NOTICE);
-    // Reuse the in-flight ref so we never double-mint, even if proactive + reactive fire together.
-    if (!cartCreation.current) {
-      cartCreation.current = api.createCart().then((c) => {
-        setCart(c);
-        return c;
-      });
-      cartCreation.current.finally(() => {
-        cartCreation.current = null;
-      });
-    }
-  }, []);
+    void startCartCreation();
+  }, [startCartCreation]);
 
   // 1-second ticker — only runs while a cart exists. Drives the visible timer and
   // proactively triggers expiry when the BFF's TTL has elapsed.
@@ -118,17 +136,8 @@ export function CartProvider({ children }: { children: ReactNode }) {
 
   const ensureCart = useCallback(async (): Promise<Cart> => {
     if (cartRef.current) return cartRef.current;
-    if (!cartCreation.current) {
-      cartCreation.current = api.createCart().then((c) => {
-        setCart(c);
-        return c;
-      });
-      cartCreation.current.finally(() => {
-        cartCreation.current = null;
-      });
-    }
-    return cartCreation.current;
-  }, []);
+    return startCartCreation();
+  }, [startCartCreation]);
 
   const addItem = useCallback(
     async (productId: string, quantity = 1) => {
