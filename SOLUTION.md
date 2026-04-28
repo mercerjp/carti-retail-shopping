@@ -137,6 +137,17 @@ The read-modify-write `stock - quantity` pattern is safe under Node's single-thr
 
 `touch(cart)` resets `lastActivityAt` on every successful add/update/remove, so an active shopper isn't penalised. `markCheckedOut` is the success path: stock stays decremented (the items were sold), cart transitions out of `active` so it can't be mutated.
 
+Every `Cart` returned to a caller carries an `expiresAt: number` (epoch ms, computed as `lastActivityAt + RESERVATION_TTL_MS`) so the client can drive a visible countdown without polling. The field is derived in a single `view()` helper so it can never drift from the BFF's own TTL constant.
+
+### Mobile cart-expiry UX
+
+- A `<CartTimer />` component is mounted in the header of `ProductList`, `ProductDetail`, and `Cart` (not Checkout). It renders `mm:ss` until `cart.expiresAt`, driven by a 1-second ticker in `CartProvider` that only runs while a cart exists.
+- Expiry is detected two ways:
+  - **Proactive** — the ticker observes `Date.now() >= cart.expiresAt`.
+  - **Reactive** — any mutation that rejects with `/is expired/i`.
+- On either path the provider clears the local `cart`, sets `expiredNotice`, and immediately auto-mints a new cart via the existing in-flight `createCart` ref so a proactive + reactive collision can't double-mint. **Previously-held line items are not restored** — the BFF has already released their reservations and the catalogue may have shifted, so re-adding is a deliberate user action.
+- `CartScreen` shows a dismissible yellow banner sourced from `expiredNotice`. `ProductDetailScreen` swaps its raw cart-error line for the same notice when an `addItem` fails on an expired cart, since the context has already auto-recreated.
+
 ### Stock-failure path
 
 A naïve design would check stock at checkout. Because we reserve at add-to-cart time, **the only place a stock failure can surface is `POST /carts/:id/items`** (or `PATCH` raising the qty). Once a line is in the cart, the inventory is provably held. Checkout failures reduce to: unknown cart, empty cart, expired/already-checked-out cart. The mobile UI shows the BFF's error message verbatim ("Insufficient stock for Sourdough Loaf: requested 5, available 12") on the Detail / Cart screens.

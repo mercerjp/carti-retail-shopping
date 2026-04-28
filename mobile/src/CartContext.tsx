@@ -3,6 +3,7 @@ import React, {
   createContext,
   useCallback,
   useContext,
+  useEffect,
   useMemo,
   useRef,
   useState,
@@ -10,16 +11,23 @@ import React, {
 import { api } from './api';
 import { Cart } from './types';
 
+const EXPIRED_NOTICE =
+  'Your cart expired after 2 minutes of inactivity — we started a fresh one.';
+
 interface CartContextValue {
   cart: Cart | null;
   loading: boolean;
   error: string | null;
+  expiresAt: number | null;
+  secondsRemaining: number;
+  expiredNotice: string | null;
   createCart: () => Promise<void>;
   refresh: () => Promise<void>;
   addItem: (productId: string, quantity?: number) => Promise<void>;
   updateItem: (productId: string, quantity: number) => Promise<void>;
   removeItem: (productId: string) => Promise<void>;
   clear: () => void;
+  dismissExpiredNotice: () => void;
 }
 
 const CartContext = createContext<CartContextValue | null>(null);
@@ -33,10 +41,47 @@ export function CartProvider({ children }: { children: ReactNode }) {
   const [cart, setCart] = useState<Cart | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [secondsRemaining, setSecondsRemaining] = useState(0);
+  const [expiredNotice, setExpiredNotice] = useState<string | null>(null);
   // Holds the in-flight createCart() promise so two rapid addItem taps don't mint two carts.
   const cartCreation = useRef<Promise<Cart> | null>(null);
   const cartRef = useRef<Cart | null>(null);
   cartRef.current = cart;
+
+  const handleExpiry = useCallback(() => {
+    setCart(null);
+    setError(null);
+    setExpiredNotice(EXPIRED_NOTICE);
+    // Reuse the in-flight ref so we never double-mint, even if proactive + reactive fire together.
+    if (!cartCreation.current) {
+      cartCreation.current = api.createCart().then((c) => {
+        setCart(c);
+        return c;
+      });
+      cartCreation.current.finally(() => {
+        cartCreation.current = null;
+      });
+    }
+  }, []);
+
+  // 1-second ticker — only runs while a cart exists. Drives the visible timer and
+  // proactively triggers expiry when the BFF's TTL has elapsed.
+  useEffect(() => {
+    if (!cart) {
+      setSecondsRemaining(0);
+      return;
+    }
+    const tick = () => {
+      const remaining = Math.max(0, Math.ceil((cart.expiresAt - Date.now()) / 1000));
+      setSecondsRemaining(remaining);
+      if (Date.now() >= cart.expiresAt) {
+        handleExpiry();
+      }
+    };
+    tick();
+    const handle = setInterval(tick, 1000);
+    return () => clearInterval(handle);
+  }, [cart, handleExpiry]);
 
   const wrap = useCallback(async <T,>(fn: () => Promise<T>): Promise<T | undefined> => {
     setLoading(true);
@@ -44,12 +89,17 @@ export function CartProvider({ children }: { children: ReactNode }) {
     try {
       return await fn();
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'Something went wrong');
+      const message = e instanceof Error ? e.message : 'Something went wrong';
+      if (/is expired/i.test(message)) {
+        handleExpiry();
+      } else {
+        setError(message);
+      }
       return undefined;
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [handleExpiry]);
 
   const createCart = useCallback(async () => {
     await wrap(async () => {
@@ -118,11 +168,42 @@ export function CartProvider({ children }: { children: ReactNode }) {
     setError(null);
   }, []);
 
+  const dismissExpiredNotice = useCallback(() => {
+    setExpiredNotice(null);
+  }, []);
+
   // Lazy: don't create a cart until the user actually adds an item. Reservations matter.
 
   const value = useMemo<CartContextValue>(
-    () => ({ cart, loading, error, createCart, refresh, addItem, updateItem, removeItem, clear }),
-    [cart, loading, error, createCart, refresh, addItem, updateItem, removeItem, clear],
+    () => ({
+      cart,
+      loading,
+      error,
+      expiresAt: cart?.expiresAt ?? null,
+      secondsRemaining,
+      expiredNotice,
+      createCart,
+      refresh,
+      addItem,
+      updateItem,
+      removeItem,
+      clear,
+      dismissExpiredNotice,
+    }),
+    [
+      cart,
+      loading,
+      error,
+      secondsRemaining,
+      expiredNotice,
+      createCart,
+      refresh,
+      addItem,
+      updateItem,
+      removeItem,
+      clear,
+      dismissExpiredNotice,
+    ],
   );
 
   return <CartContext.Provider value={value}>{children}</CartContext.Provider>;

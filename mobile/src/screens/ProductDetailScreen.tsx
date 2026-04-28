@@ -20,7 +20,7 @@ export function ProductDetailScreen({ route, navigation }: Props) {
   const { productId } = route.params;
   const [product, setProduct] = useState<Product | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const { addItem, error: cartError, loading } = useCart();
+  const { addItem, error: cartError, loading, expiredNotice } = useCart();
   const [adding, setAdding] = useState(false);
   const [added, setAdded] = useState(false);
 
@@ -87,8 +87,12 @@ export function ProductDetailScreen({ route, navigation }: Props) {
         </Text>
       </Pressable>
 
-      {cartError && <Text style={styles.error}>{cartError}</Text>}
-      {added && !cartError && (
+      {expiredNotice ? (
+        <Text style={styles.notice}>Cart expired — we started a fresh one. Try adding again.</Text>
+      ) : (
+        cartError && <Text style={styles.error}>{cartError}</Text>
+      )}
+      {added && !cartError && !expiredNotice && (
         <Pressable onPress={() => navigation.navigate('Cart')}>
           <Text style={styles.viewCart}>Added — view cart</Text>
         </Pressable>
@@ -118,4 +122,5 @@ const styles = StyleSheet.create({
   btnText: { color: '#fff', fontWeight: '600', fontSize: 16 },
   error: { color: '#b91c1c', textAlign: 'center' },
   viewCart: { color: '#2563eb', textAlign: 'center', fontWeight: '600' },
+  notice: { color: '#78350f', textAlign: 'center' },
 });

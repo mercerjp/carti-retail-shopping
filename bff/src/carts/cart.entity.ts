@@ -11,4 +11,5 @@ export interface Cart {
   lines: CartLine[];
   createdAt: number;
   lastActivityAt: number;
+  expiresAt: number;
 }

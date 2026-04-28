@@ -4,6 +4,7 @@ import { StatusBar } from 'expo-status-bar';
 import React from 'react';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { CartProvider } from './src/CartContext';
+import { CartTimer } from './src/components/CartTimer';
 import { RootStackParamList } from './src/navigation';
 import { CartScreen } from './src/screens/CartScreen';
 import { CheckoutScreen } from './src/screens/CheckoutScreen';
@@ -26,12 +27,12 @@ export default function App() {
             <Stack.Screen
               name="ProductDetail"
               component={ProductDetailScreen}
-              options={{ title: 'Product' }}
+              options={{ title: 'Product', headerRight: () => <CartTimer /> }}
             />
             <Stack.Screen
               name="Cart"
               component={CartScreen}
-              options={{ title: 'Your cart' }}
+              options={{ title: 'Your cart', headerRight: () => <CartTimer /> }}
             />
             <Stack.Screen
               name="Checkout"
