@@ -12,6 +12,7 @@ import { api } from '../api';
 import { useCart } from '../CartContext';
 import { formatGBP } from '../format';
 import { RootStackParamList } from '../navigation';
+import { theme } from '../theme';
 import { Product } from '../types';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'Cart'>;
@@ -79,7 +80,7 @@ export function CartScreen({ navigation }: Props) {
   if (!lines && !resolveError) {
     return (
       <View style={styles.empty}>
-        <ActivityIndicator />
+        <ActivityIndicator color={theme.colors.ink} />
       </View>
     );
   }
@@ -173,56 +174,66 @@ export function CartScreen({ navigation }: Props) {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1 },
-  empty: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: 24, gap: 12 },
-  emptyText: { fontSize: 16 },
-  link: { color: '#2563eb', fontWeight: '600' },
-  list: { padding: 16, gap: 12 },
+  container: { flex: 1, backgroundColor: theme.colors.canvas },
+  empty: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: theme.spacing.xl,
+    gap: theme.spacing.md,
+    backgroundColor: theme.colors.canvas,
+  },
+  emptyText: { ...theme.typography.h2 },
+  link: { color: theme.colors.accent, fontWeight: '700' },
+  list: { padding: theme.spacing.lg, gap: theme.spacing.md },
   row: {
-    backgroundColor: '#fff',
-    borderRadius: 12,
-    padding: 16,
+    backgroundColor: theme.colors.surface,
+    borderRadius: theme.radii.lg,
+    padding: theme.spacing.lg,
     borderWidth: 1,
-    borderColor: '#e5e7eb',
+    borderColor: theme.colors.border,
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 12,
+    gap: theme.spacing.md,
+    ...theme.shadows.card,
   },
-  name: { fontSize: 15, fontWeight: '600' },
-  unit: { color: '#6b7280', marginTop: 2 },
-  qtyControls: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  name: { ...theme.typography.h2, fontSize: 15 },
+  unit: { ...theme.typography.caption, marginTop: 2 },
+  qtyControls: { flexDirection: 'row', alignItems: 'center', gap: theme.spacing.sm },
   qtyBtn: {
-    width: 28,
-    height: 28,
-    borderRadius: 6,
-    backgroundColor: '#f3f4f6',
+    width: 32,
+    height: 32,
+    borderRadius: theme.radii.pill,
+    borderWidth: 1,
+    borderColor: theme.colors.borderStrong,
+    backgroundColor: theme.colors.surface,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  qtyBtnText: { fontSize: 18, fontWeight: '600' },
-  qtyBtnDisabled: { opacity: 0.4 },
-  qty: { width: 24, textAlign: 'center', fontSize: 15 },
-  remove: { color: '#b91c1c', fontWeight: '600' },
+  qtyBtnText: { fontSize: 18, fontWeight: '700', color: theme.colors.ink },
+  qtyBtnDisabled: { opacity: 0.35, borderColor: theme.colors.disabled },
+  qty: { width: 24, textAlign: 'center', fontSize: 15, fontWeight: '600' },
+  remove: { color: theme.colors.danger, fontWeight: '700' },
   footer: {
     borderTopWidth: 1,
-    borderTopColor: '#e5e7eb',
-    padding: 16,
-    backgroundColor: '#fff',
-    gap: 8,
+    borderTopColor: theme.colors.border,
+    padding: theme.spacing.lg,
+    backgroundColor: theme.colors.surface,
+    gap: theme.spacing.sm,
   },
-  subtotalRow: { flexDirection: 'row', justifyContent: 'space-between' },
-  subtotalLabel: { fontSize: 16 },
-  subtotal: { fontSize: 18, fontWeight: '700' },
-  note: { color: '#6b7280', fontSize: 13 },
-  error: { color: '#b91c1c' },
+  subtotalRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'baseline' },
+  subtotalLabel: { ...theme.typography.body, fontWeight: '600' },
+  subtotal: { ...theme.typography.h1 },
+  note: { ...theme.typography.caption, color: theme.colors.textMuted },
+  error: { color: theme.colors.danger },
   checkoutBtn: {
-    backgroundColor: '#111827',
-    paddingVertical: 14,
-    borderRadius: 10,
+    backgroundColor: theme.colors.ink,
+    paddingVertical: theme.spacing.lg,
+    borderRadius: theme.radii.md,
     alignItems: 'center',
-    marginTop: 8,
+    marginTop: theme.spacing.sm,
   },
-  pressed: { backgroundColor: '#374151' },
-  disabled: { backgroundColor: '#9ca3af' },
-  checkoutText: { color: '#fff', fontWeight: '600', fontSize: 16 },
+  pressed: { backgroundColor: theme.colors.borderStrong, opacity: 0.9 },
+  disabled: { backgroundColor: theme.colors.disabled },
+  checkoutText: { color: '#FFFFFF', fontWeight: '700', fontSize: 16, letterSpacing: 0.3 },
 });

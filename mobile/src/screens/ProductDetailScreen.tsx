@@ -12,6 +12,7 @@ import { api } from '../api';
 import { useCart } from '../CartContext';
 import { formatGBP } from '../format';
 import { RootStackParamList } from '../navigation';
+import { theme } from '../theme';
 import { Product } from '../types';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'ProductDetail'>;
@@ -46,7 +47,7 @@ export function ProductDetailScreen({ route, navigation }: Props) {
   if (!product) {
     return (
       <View style={styles.center}>
-        <ActivityIndicator />
+        <ActivityIndicator color={theme.colors.ink} />
       </View>
     );
   }
@@ -63,13 +64,15 @@ export function ProductDetailScreen({ route, navigation }: Props) {
 
   return (
     <ScrollView contentContainerStyle={styles.container}>
-      <Text style={styles.name}>{product.name}</Text>
-      <Text style={styles.category}>{product.category}</Text>
-      <Text style={styles.price}>{formatGBP(product.priceCents)}</Text>
-      <Text style={styles.description}>{product.description}</Text>
-      <Text style={outOfStock ? styles.oos : styles.stock}>
-        {outOfStock ? 'Out of stock' : `${product.stock} in stock`}
-      </Text>
+      <View style={styles.card}>
+        <Text style={styles.category}>{product.category}</Text>
+        <Text style={styles.name}>{product.name}</Text>
+        <Text style={styles.price}>{formatGBP(product.priceCents)}</Text>
+        <Text style={styles.description}>{product.description}</Text>
+        <Text style={outOfStock ? styles.oos : styles.stock}>
+          {outOfStock ? 'Out of stock' : `${product.stock} in stock`}
+        </Text>
+      </View>
 
       <Pressable
         onPress={onAdd}
@@ -98,24 +101,43 @@ export function ProductDetailScreen({ route, navigation }: Props) {
 }
 
 const styles = StyleSheet.create({
-  container: { padding: 24, gap: 12 },
-  center: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: 24 },
-  name: { fontSize: 24, fontWeight: '700' },
-  category: { color: '#6b7280', textTransform: 'uppercase', fontSize: 12, letterSpacing: 1 },
-  price: { fontSize: 22, fontWeight: '600' },
-  description: { fontSize: 15, lineHeight: 22, color: '#374151' },
-  stock: { color: '#16a34a' },
-  oos: { color: '#b91c1c', fontWeight: '600' },
-  btn: {
-    backgroundColor: '#111827',
-    paddingVertical: 14,
-    borderRadius: 10,
-    alignItems: 'center',
-    marginTop: 12,
+  container: {
+    padding: theme.spacing.lg,
+    gap: theme.spacing.lg,
+    backgroundColor: theme.colors.canvas,
+    flexGrow: 1,
   },
-  btnPressed: { backgroundColor: '#374151' },
-  btnDisabled: { backgroundColor: '#9ca3af' },
-  btnText: { color: '#fff', fontWeight: '600', fontSize: 16 },
-  error: { color: '#b91c1c', textAlign: 'center' },
-  viewCart: { color: '#2563eb', textAlign: 'center', fontWeight: '600' },
+  center: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: theme.spacing.xl,
+    backgroundColor: theme.colors.canvas,
+  },
+  card: {
+    backgroundColor: theme.colors.surface,
+    borderRadius: theme.radii.lg,
+    padding: theme.spacing.xl,
+    borderWidth: 1,
+    borderColor: theme.colors.border,
+    gap: theme.spacing.md,
+    ...theme.shadows.card,
+  },
+  name: { ...theme.typography.display },
+  category: { ...theme.typography.label },
+  price: { ...theme.typography.price, fontSize: 22 },
+  description: { ...theme.typography.body, color: theme.colors.textSecondary },
+  stock: { ...theme.typography.caption, color: theme.colors.success, fontWeight: '700' },
+  oos: { ...theme.typography.caption, color: theme.colors.danger, fontWeight: '700' },
+  btn: {
+    backgroundColor: theme.colors.ink,
+    paddingVertical: theme.spacing.lg,
+    borderRadius: theme.radii.md,
+    alignItems: 'center',
+  },
+  btnPressed: { backgroundColor: theme.colors.borderStrong, opacity: 0.9 },
+  btnDisabled: { backgroundColor: theme.colors.disabled },
+  btnText: { color: '#FFFFFF', fontWeight: '700', fontSize: 16, letterSpacing: 0.3 },
+  error: { color: theme.colors.danger, textAlign: 'center' },
+  viewCart: { color: theme.colors.accent, textAlign: 'center', fontWeight: '700' },
 });
