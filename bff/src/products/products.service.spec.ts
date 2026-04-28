@@ -41,4 +41,18 @@ describe('ProductsService', () => {
     service.releaseStock('p-coffee-beans', 3);
     expect(service.get('p-coffee-beans').stock).toBe(mid + 3);
   });
+
+  it.each([0, -1, 1.5, NaN])(
+    'rejects non-positive-integer quantity (%s) on reserveStockOrThrow',
+    (q) => {
+      expect(() => service.reserveStockOrThrow('p-coffee-beans', q)).toThrow(BadRequestException);
+    },
+  );
+
+  it.each([0, -1, 1.5])(
+    'rejects non-positive-integer quantity (%s) on releaseStock',
+    (q) => {
+      expect(() => service.releaseStock('p-coffee-beans', q)).toThrow(BadRequestException);
+    },
+  );
 });
