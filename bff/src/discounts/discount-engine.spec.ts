@@ -49,9 +49,9 @@ describe('DiscountEngine', () => {
       lines({ product: product({ id: 'p-oat-milk', priceCents: 249 }), quantity: 6 }),
     );
     // 6 / 3 = 2 free units at 249 each = 498
-    expect(
-      result.applied.find((a) => a.discountId === 'd-oat-milk-3-for-2')?.amountCents,
-    ).toBe(498);
+    expect(result.applied.find((a) => a.discountId === 'd-oat-milk-3-for-2')?.amountCents).toBe(
+      498,
+    );
   });
 
   it('does not apply 3-for-2 below threshold (qty < 3)', () => {
@@ -76,9 +76,7 @@ describe('DiscountEngine', () => {
     const result = engine.price(
       lines({ product: product({ id: 'p-coffee-beans', priceCents: 1299 }), quantity: 1 }),
     );
-    expect(
-      result.applied.find((a) => a.discountId === 'd-coffee-oatmilk-bundle'),
-    ).toBeUndefined();
+    expect(result.applied.find((a) => a.discountId === 'd-coffee-oatmilk-bundle')).toBeUndefined();
   });
 
   it('applies FIXED_OFF_ORDER when post-product subtotal >= threshold', () => {
@@ -115,8 +113,9 @@ describe('DiscountEngine', () => {
   it('skips inactive discounts', () => {
     const discounts = new DiscountsService();
     // mutate one of the seed discounts to inactive — exercises the active() filter
-    (discounts as unknown as { discounts: Map<string, { active: boolean }> })
-      .discounts.get('d-coffee-20')!.active = false;
+    (discounts as unknown as { discounts: Map<string, { active: boolean }> }).discounts.get(
+      'd-coffee-20',
+    )!.active = false;
     const customEngine = new DiscountEngine(discounts);
     const result = customEngine.price(
       lines({

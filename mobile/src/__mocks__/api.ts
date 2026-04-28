@@ -63,29 +63,34 @@ export const api = {
     }),
   updateItem: jest.fn(),
   removeItem: jest.fn(),
-  checkout: jest.fn().mockImplementation(async (cartId: string): Promise<OrderSummary> => ({
-    orderId: 'o-test',
-    cartId,
-    placedAt: new Date().toISOString(),
-    lines: [
-      {
-        productId: 'p-coffee-beans',
-        name: 'Coffee Beans',
-        unitPriceCents: 1299,
-        quantity: 1,
-        lineTotalCents: 1299,
-      },
-    ],
-    subtotalCents: 1299,
-    discounts: [{ discountId: 'd-coffee-20', name: '20% off coffee', amountCents: 260 }],
-    discountTotalCents: 260,
-    totalCents: 1039,
-    currency: 'GBP',
-  })),
+  checkout: jest.fn().mockImplementation(
+    async (cartId: string): Promise<OrderSummary> => ({
+      orderId: 'o-test',
+      cartId,
+      placedAt: new Date().toISOString(),
+      lines: [
+        {
+          productId: 'p-coffee-beans',
+          name: 'Coffee Beans',
+          unitPriceCents: 1299,
+          quantity: 1,
+          lineTotalCents: 1299,
+        },
+      ],
+      subtotalCents: 1299,
+      discounts: [{ discountId: 'd-coffee-20', name: '20% off coffee', amountCents: 260 }],
+      discountTotalCents: 260,
+      totalCents: 1039,
+      currency: 'GBP',
+    }),
+  ),
 };
 
 export class ApiError extends Error {
-  constructor(message: string, public status: number) {
+  constructor(
+    message: string,
+    public status: number,
+  ) {
     super(message);
   }
 }

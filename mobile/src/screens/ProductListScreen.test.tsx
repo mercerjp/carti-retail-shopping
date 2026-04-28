@@ -42,9 +42,7 @@ describe('ProductListScreen', () => {
   it('refetches products when the screen regains focus', async () => {
     const first: Product[] = [{ ...mockProducts[0], stock: 5 }];
     const second: Product[] = [{ ...mockProducts[0], stock: 4 }];
-    (api.listProducts as jest.Mock)
-      .mockResolvedValueOnce(first)
-      .mockResolvedValueOnce(second);
+    (api.listProducts as jest.Mock).mockResolvedValueOnce(first).mockResolvedValueOnce(second);
 
     const navRef = React.createRef<NavigationContainerRef<RootStackParamList>>();
 

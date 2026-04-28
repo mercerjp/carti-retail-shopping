@@ -49,10 +49,7 @@ describe('ProductsService', () => {
     },
   );
 
-  it.each([0, -1, 1.5])(
-    'rejects non-positive-integer quantity (%s) on releaseStock',
-    (q) => {
-      expect(() => service.releaseStock('p-coffee-beans', q)).toThrow(BadRequestException);
-    },
-  );
+  it.each([0, -1, 1.5])('rejects non-positive-integer quantity (%s) on releaseStock', (q) => {
+    expect(() => service.releaseStock('p-coffee-beans', q)).toThrow(BadRequestException);
+  });
 });

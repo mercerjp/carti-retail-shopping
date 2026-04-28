@@ -11,8 +11,7 @@ import React, {
 import { api } from './api';
 import { Cart } from './types';
 
-const EXPIRED_NOTICE =
-  'Your cart expired after 2 minutes of inactivity — we started a fresh one.';
+const EXPIRED_NOTICE = 'Your cart expired after 2 minutes of inactivity — we started a fresh one.';
 
 interface CartContextValue {
   cart: Cart | null;
@@ -101,23 +100,26 @@ export function CartProvider({ children }: { children: ReactNode }) {
     return () => clearInterval(handle);
   }, [cart, handleExpiry]);
 
-  const wrap = useCallback(async <T,>(fn: () => Promise<T>): Promise<T | undefined> => {
-    setLoading(true);
-    setError(null);
-    try {
-      return await fn();
-    } catch (e) {
-      const message = e instanceof Error ? e.message : 'Something went wrong';
-      if (/is expired/i.test(message)) {
-        handleExpiry();
-      } else {
-        setError(message);
+  const wrap = useCallback(
+    async <T,>(fn: () => Promise<T>): Promise<T | undefined> => {
+      setLoading(true);
+      setError(null);
+      try {
+        return await fn();
+      } catch (e) {
+        const message = e instanceof Error ? e.message : 'Something went wrong';
+        if (/is expired/i.test(message)) {
+          handleExpiry();
+        } else {
+          setError(message);
+        }
+        return undefined;
+      } finally {
+        setLoading(false);
       }
-      return undefined;
-    } finally {
-      setLoading(false);
-    }
-  }, [handleExpiry]);
+    },
+    [handleExpiry],
+  );
 
   const createCart = useCallback(async () => {
     await wrap(async () => {

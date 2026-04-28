@@ -50,9 +50,7 @@ describe('Retail BFF (e2e)', () => {
       .send({ productId: 'p-oat-milk', quantity: 3 })
       .expect(201);
 
-    const order = (
-      await request(server).post(`/api/carts/${cart.id}/checkout`).expect(201)
-    ).body;
+    const order = (await request(server).post(`/api/carts/${cart.id}/checkout`).expect(201)).body;
 
     expect(order.orderId).toBeDefined();
     expect(order.lines).toHaveLength(2);
