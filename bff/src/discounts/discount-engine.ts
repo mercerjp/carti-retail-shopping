@@ -33,16 +33,14 @@ export class DiscountEngine {
   constructor(private readonly discounts: DiscountsService) {}
 
   price(lines: CartLine[]): PricingResult {
-    const subtotalCents = lines.reduce(
-      (sum, l) => sum + l.product.priceCents * l.quantity,
-      0,
-    );
+    const subtotalCents = lines.reduce((sum, l) => sum + l.product.priceCents * l.quantity, 0);
 
     const active = this.discounts.active();
     const applied: AppliedDiscount[] = [];
 
     const productScoped = active.filter(
-      (d) => d.kind === 'PERCENT_OFF_PRODUCT' || d.kind === 'BUY_X_GET_Y_FREE' || d.kind === 'BUNDLE',
+      (d) =>
+        d.kind === 'PERCENT_OFF_PRODUCT' || d.kind === 'BUY_X_GET_Y_FREE' || d.kind === 'BUNDLE',
     );
     const orderScoped = active.filter((d) => d.kind === 'FIXED_OFF_ORDER');
 

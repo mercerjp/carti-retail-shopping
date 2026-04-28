@@ -1,13 +1,6 @@
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import React, { useCallback, useEffect, useState } from 'react';
-import {
-  ActivityIndicator,
-  FlatList,
-  Pressable,
-  StyleSheet,
-  Text,
-  View,
-} from 'react-native';
+import { ActivityIndicator, FlatList, Pressable, StyleSheet, Text, View } from 'react-native';
 import { api } from '../api';
 import { useCart } from '../CartContext';
 import { formatGBP } from '../format';
@@ -23,8 +16,16 @@ interface EnrichedLine {
 }
 
 export function CartScreen({ navigation }: Props) {
-  const { cart, error, loading, updateItem, removeItem, clear, expiredNotice, dismissExpiredNotice } =
-    useCart();
+  const {
+    cart,
+    error,
+    loading,
+    updateItem,
+    removeItem,
+    clear,
+    expiredNotice,
+    dismissExpiredNotice,
+  } = useCart();
   const [lines, setLines] = useState<EnrichedLine[] | null>(null);
   const [resolveError, setResolveError] = useState<string | null>(null);
   const [checkingOut, setCheckingOut] = useState(false);
@@ -38,9 +39,7 @@ export function CartScreen({ navigation }: Props) {
     setResolveError(null);
     try {
       const products = await Promise.all(cart.lines.map((l) => api.getProduct(l.productId)));
-      setLines(
-        cart.lines.map((l, i) => ({ product: products[i], quantity: l.quantity })),
-      );
+      setLines(cart.lines.map((l, i) => ({ product: products[i], quantity: l.quantity })));
     } catch (e) {
       setResolveError(e instanceof Error ? e.message : 'Could not load cart contents');
     }
@@ -113,10 +112,7 @@ export function CartScreen({ navigation }: Props) {
     );
   }
 
-  const subtotalCents = (lines ?? []).reduce(
-    (s, l) => s + l.product.priceCents * l.quantity,
-    0,
-  );
+  const subtotalCents = (lines ?? []).reduce((s, l) => s + l.product.priceCents * l.quantity, 0);
 
   return (
     <View style={styles.container}>
@@ -129,9 +125,7 @@ export function CartScreen({ navigation }: Props) {
           <View style={styles.row}>
             <View style={{ flex: 1 }}>
               <Text style={styles.name}>{item.product.name}</Text>
-              <Text style={styles.unit}>
-                {formatGBP(item.product.priceCents)} each
-              </Text>
+              <Text style={styles.unit}>{formatGBP(item.product.priceCents)} each</Text>
             </View>
             <View style={styles.qtyControls}>
               <Pressable
@@ -182,9 +176,7 @@ export function CartScreen({ navigation }: Props) {
           accessibilityRole="button"
           accessibilityLabel="Check out"
         >
-          <Text style={styles.checkoutText}>
-            {checkingOut ? 'Processing…' : 'Check out'}
-          </Text>
+          <Text style={styles.checkoutText}>{checkingOut ? 'Processing…' : 'Check out'}</Text>
         </Pressable>
       </View>
     </View>

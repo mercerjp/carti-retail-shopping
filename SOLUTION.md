@@ -66,18 +66,18 @@ npm run test:mobile
 
 ## API surface
 
-| Method | Path                                | Purpose                          |
-| ------ | ----------------------------------- | -------------------------------- |
-| GET    | `/api/products`                     | List catalogue with stock        |
-| GET    | `/api/products/:id`                 | Single product                   |
-| GET    | `/api/discounts`                    | List active discounts            |
-| GET    | `/api/discounts/:id`                | Single discount                  |
-| POST   | `/api/carts`                        | Create cart                      |
-| GET    | `/api/carts/:id`                    | Get cart                         |
-| POST   | `/api/carts/:id/items`              | Add item `{productId, quantity}` |
-| PATCH  | `/api/carts/:id/items/:productId`   | Set quantity (0 removes)         |
-| DELETE | `/api/carts/:id/items/:productId`   | Remove line                      |
-| POST   | `/api/carts/:id/checkout`           | Checkout, returns OrderSummary   |
+| Method | Path                              | Purpose                          |
+| ------ | --------------------------------- | -------------------------------- |
+| GET    | `/api/products`                   | List catalogue with stock        |
+| GET    | `/api/products/:id`               | Single product                   |
+| GET    | `/api/discounts`                  | List active discounts            |
+| GET    | `/api/discounts/:id`              | Single discount                  |
+| POST   | `/api/carts`                      | Create cart                      |
+| GET    | `/api/carts/:id`                  | Get cart                         |
+| POST   | `/api/carts/:id/items`            | Add item `{productId, quantity}` |
+| PATCH  | `/api/carts/:id/items/:productId` | Set quantity (0 removes)         |
+| DELETE | `/api/carts/:id/items/:productId` | Remove line                      |
+| POST   | `/api/carts/:id/checkout`         | Checkout, returns OrderSummary   |
 
 ---
 
@@ -85,15 +85,15 @@ npm run test:mobile
 
 Hardcoded seed data in `bff/src/products/products.seed.ts`, loaded into an in-memory `Map` at boot. Stock fields are mutable — they decrease on reserve and increase on release.
 
-| ID                 | Name                              | Price  | Stock |
-| ------------------ | --------------------------------- | ------ | ----- |
-| `p-coffee-beans`   | Single-Origin Coffee Beans 250g   | £12.99 | 24    |
-| `p-oat-milk`       | Barista Oat Milk 1L               | £2.49  | 60    |
-| `p-sourdough`      | Sourdough Loaf                    | £5.49  | 12    |
-| `p-dark-chocolate` | Dark Chocolate 70% 100g           | £3.99  | 40    |
-| `p-olive-oil`      | Extra Virgin Olive Oil 500ml      | £14.99 | 18    |
-| `p-pasta`          | Bronze-Cut Spaghetti 500g         | £3.29  | 50    |
-| `p-tomato-sauce`   | San Marzano Tomato Sauce 400g     | £4.49  | 0     |
+| ID                 | Name                            | Price  | Stock |
+| ------------------ | ------------------------------- | ------ | ----- |
+| `p-coffee-beans`   | Single-Origin Coffee Beans 250g | £12.99 | 24    |
+| `p-oat-milk`       | Barista Oat Milk 1L             | £2.49  | 60    |
+| `p-sourdough`      | Sourdough Loaf                  | £5.49  | 12    |
+| `p-dark-chocolate` | Dark Chocolate 70% 100g         | £3.99  | 40    |
+| `p-olive-oil`      | Extra Virgin Olive Oil 500ml    | £14.99 | 18    |
+| `p-pasta`          | Bronze-Cut Spaghetti 500g       | £3.29  | 50    |
+| `p-tomato-sauce`   | San Marzano Tomato Sauce 400g   | £4.49  | 0     |
 
 The `p-tomato-sauce` line ships with stock 0 to make the out-of-stock UI path easy to demo.
 
@@ -103,12 +103,12 @@ The `p-tomato-sauce` line ships with stock 0 to make the out-of-stock UI path ea
 
 Hardcoded seed data in `bff/src/discounts/discounts.seed.ts`. Four promotional kinds, all evaluated automatically at checkout.
 
-| ID                          | Name                          | Kind                  | Effect                                          |
-| --------------------------- | ----------------------------- | --------------------- | ----------------------------------------------- |
-| `d-coffee-20`               | 20% off coffee beans          | `PERCENT_OFF_PRODUCT` | 20% off every unit of `p-coffee-beans`         |
-| `d-oat-milk-3-for-2`        | Oat milk: 3 for 2             | `BUY_X_GET_Y_FREE`    | Buy 2, get 1 free (per group of 3)              |
-| `d-coffee-oatmilk-bundle`   | Coffee & oat milk bundle      | `BUNDLE`              | £2 off per matched pair of coffee + oat milk    |
-| `d-order-5-over-30`         | £5 off when you spend £30     | `FIXED_OFF_ORDER`     | £5 off if post-product-discount subtotal ≥ £30  |
+| ID                        | Name                      | Kind                  | Effect                                         |
+| ------------------------- | ------------------------- | --------------------- | ---------------------------------------------- |
+| `d-coffee-20`             | 20% off coffee beans      | `PERCENT_OFF_PRODUCT` | 20% off every unit of `p-coffee-beans`         |
+| `d-oat-milk-3-for-2`      | Oat milk: 3 for 2         | `BUY_X_GET_Y_FREE`    | Buy 2, get 1 free (per group of 3)             |
+| `d-coffee-oatmilk-bundle` | Coffee & oat milk bundle  | `BUNDLE`              | £2 off per matched pair of coffee + oat milk   |
+| `d-order-5-over-30`       | £5 off when you spend £30 | `FIXED_OFF_ORDER`     | £5 off if post-product-discount subtotal ≥ £30 |
 
 ### How promotional discounts work
 
@@ -242,13 +242,32 @@ The fetch client parses BFF error bodies and rethrows with the server's message.
 
 `npm test` in `mobile/`.
 
+### Linting & formatting
+
+ESLint and Prettier are wired up across both workspaces, with a single shared `.prettierrc` at the repo root so BFF and mobile format identically.
+
+- **`bff/`** — legacy `.eslintrc.js` extending `eslint:recommended`, `@typescript-eslint/recommended`, and `prettier` (to disable formatting-related rules). Pinned to ESLint 8 + typescript-eslint 7 to match the TypeScript 5.5 / Nest 10 era.
+- **`mobile/`** — extends `eslint-config-expo` (canonical for Expo SDK 51) plus `prettier`. Test files relax `import/first` since the codebase intentionally imports modules after `jest.mock(...)` calls so the mock registers first.
+- **Root** — `prettier` is a root devDependency; `npm run format` / `npm run format:check` operate over the whole tree.
+
+Scripts:
+
+| Command (root)         | What it does                            |
+| ---------------------- | --------------------------------------- |
+| `npm run lint`         | Lints both workspaces                   |
+| `npm run lint:fix`     | Lints both workspaces with `--fix`      |
+| `npm run format`       | Prettier-writes the entire repo         |
+| `npm run format:check` | Prettier-check (used in CI / pre-merge) |
+
+Each workspace also has its own `lint` / `lint:fix` script for targeted runs.
+
 ---
 
 ## Assumptions
 
 1. **Single user, no auth.** The BFF mints cart ids and trusts whoever holds one. Per the spec.
 2. **In-memory only.** State is lost on restart; product/discount catalogues are reseeded on boot.
-3. **Reservations decrement live stock at add-time** rather than tracking a separate `reserved` counter — see *Cart lifecycle* for rationale.
+3. **Reservations decrement live stock at add-time** rather than tracking a separate `reserved` counter — see _Cart lifecycle_ for rationale.
 4. **Single currency (GBP).** Hardcoded on the order summary.
 5. **Sessionless.** The cart id is the only identifier and is held in React state on the client.
 6. **Simulated checkout.** No payment integration; a successful checkout deterministically returns an order summary.

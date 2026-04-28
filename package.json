@@ -13,6 +13,13 @@
     "mobile": "npm run start --workspace=mobile",
     "test": "npm run test --workspace=bff && npm run test --workspace=mobile",
     "test:bff": "npm run test --workspace=bff",
-    "test:mobile": "npm run test --workspace=mobile"
+    "test:mobile": "npm run test --workspace=mobile",
+    "lint": "npm run lint --workspace=bff && npm run lint --workspace=mobile",
+    "lint:fix": "npm run lint:fix --workspace=bff && npm run lint:fix --workspace=mobile",
+    "format": "prettier --write .",
+    "format:check": "prettier --check ."
+  },
+  "devDependencies": {
+    "prettier": "^3.3.3"
   }
 }
