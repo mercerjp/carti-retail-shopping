@@ -31,8 +31,11 @@ describe('Retail BFF (e2e)', () => {
     expect(res.body.every((d: { active: boolean }) => d.active)).toBe(true);
   });
 
-  it('completes a happy-path cart -> checkout flow', async () => {
+  it('completes a happy-path cart -> checkout flow and decrements catalogue stock', async () => {
     const server = app.getHttpServer();
+
+    const coffeeBefore = (await request(server).get('/api/products/p-coffee-beans')).body.stock;
+    const oatBefore = (await request(server).get('/api/products/p-oat-milk')).body.stock;
 
     const cart = (await request(server).post('/api/carts').expect(201)).body;
     expect(cart.id).toBeDefined();
@@ -55,6 +58,12 @@ describe('Retail BFF (e2e)', () => {
     expect(order.lines).toHaveLength(2);
     expect(order.discountTotalCents).toBeGreaterThan(0);
     expect(order.totalCents).toBeLessThan(order.subtotalCents);
+
+    // Sale moves the held reservation into "sold" — stock stays decremented.
+    const coffeeAfter = (await request(server).get('/api/products/p-coffee-beans')).body.stock;
+    const oatAfter = (await request(server).get('/api/products/p-oat-milk')).body.stock;
+    expect(coffeeAfter).toBe(coffeeBefore - 1);
+    expect(oatAfter).toBe(oatBefore - 3);
   });
 
   it('returns 400 when adding out-of-stock item', async () => {
