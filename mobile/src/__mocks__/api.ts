@@ -20,6 +20,17 @@ export const mockProducts: Product[] = [
 ];
 
 let nextCartId = 1;
+const cartStore = new Map<string, Cart>();
+
+function makeCart(id: string): Cart {
+  return {
+    id,
+    status: 'active',
+    lines: [],
+    createdAt: Date.now(),
+    lastActivityAt: Date.now(),
+  };
+}
 
 export const api = {
   listProducts: jest.fn().mockResolvedValue(mockProducts),
@@ -29,26 +40,26 @@ export const api = {
     return found;
   }),
   createCart: jest.fn().mockImplementation(async () => {
-    const cart: Cart = {
-      id: `cart-${nextCartId++}`,
-      status: 'active',
-      lines: [],
-      createdAt: Date.now(),
-      lastActivityAt: Date.now(),
-    };
-    return cart;
+    const id = `cart-${nextCartId++}`;
+    const cart = makeCart(id);
+    cartStore.set(id, cart);
+    return { ...cart, lines: [...cart.lines] };
   }),
-  getCart: jest.fn(),
-  addItem: jest.fn().mockImplementation(async (cartId: string, productId: string, quantity: number) => {
-    const cart: Cart = {
-      id: cartId,
-      status: 'active',
-      lines: [{ productId, quantity }],
-      createdAt: Date.now(),
-      lastActivityAt: Date.now(),
-    };
-    return cart;
+  getCart: jest.fn().mockImplementation(async (id: string) => {
+    const c = cartStore.get(id);
+    if (!c) throw new Error(`Cart ${id} not found`);
+    return { ...c, lines: c.lines.map((l) => ({ ...l })) };
   }),
+  addItem: jest
+    .fn()
+    .mockImplementation(async (cartId: string, productId: string, quantity: number) => {
+      const c = cartStore.get(cartId) ?? makeCart(cartId);
+      const existing = c.lines.find((l) => l.productId === productId);
+      if (existing) existing.quantity += quantity;
+      else c.lines.push({ productId, quantity });
+      cartStore.set(cartId, c);
+      return { ...c, lines: c.lines.map((l) => ({ ...l })) };
+    }),
   updateItem: jest.fn(),
   removeItem: jest.fn(),
   checkout: jest.fn().mockImplementation(async (cartId: string): Promise<OrderSummary> => ({
@@ -83,4 +94,5 @@ export function resetApiMocks(): void {
     if (jest.isMockFunction(fn)) fn.mockClear();
   });
   nextCartId = 1;
+  cartStore.clear();
 }

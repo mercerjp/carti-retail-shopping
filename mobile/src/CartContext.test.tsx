@@ -46,4 +46,25 @@ describe('CartContext', () => {
     act(() => result.current.clear());
     expect(result.current.cart).toBeNull();
   });
+
+  it('accumulates quantity when the same product is added twice', async () => {
+    const { result } = renderHook(() => useCart(), { wrapper });
+    await act(async () => {
+      await result.current.addItem('p-coffee-beans', 2);
+    });
+    await act(async () => {
+      await result.current.addItem('p-coffee-beans', 1);
+    });
+    expect(result.current.cart?.lines).toHaveLength(1);
+    expect(result.current.cart?.lines[0].quantity).toBe(3);
+  });
+
+  it('surfaces api errors via context.error', async () => {
+    api.addItem.mockRejectedValueOnce(new Error('Insufficient stock'));
+    const { result } = renderHook(() => useCart(), { wrapper });
+    await act(async () => {
+      await result.current.addItem('p-coffee-beans', 999);
+    });
+    expect(result.current.error).toMatch(/Insufficient stock/);
+  });
 });
