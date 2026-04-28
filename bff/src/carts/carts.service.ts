@@ -90,16 +90,16 @@ export class CartsService implements OnModuleDestroy {
   }
 
   /**
-   * Use this when stock should return to inventory — i.e. on cart EXPIRY only. The product was
-   * never sold, so the held units go back. Not called for successful checkout (see markCheckedOut).
+   * Returns held stock to inventory and marks the cart expired. Only used by the expiry
+   * sweep — successful checkout uses markCheckedOut instead, which keeps the decrement.
    */
-  releaseReservations(cartId: string, reason: 'expiry'): void {
+  expire(cartId: string): void {
     const cart = this.carts.get(cartId);
     if (!cart || cart.status !== 'active') return;
     for (const line of cart.lines) {
       this.products.releaseStock(line.productId, line.quantity);
     }
-    cart.status = reason === 'expiry' ? 'expired' : 'checked_out';
+    cart.status = 'expired';
   }
 
   /**
@@ -118,7 +118,7 @@ export class CartsService implements OnModuleDestroy {
       if (cart.status !== 'active') continue;
       if (now - cart.lastActivityAt > RESERVATION_TTL_MS) {
         this.logger.log(`Cart ${cart.id} expired — releasing ${cart.lines.length} reservations`);
-        this.releaseReservations(cart.id, 'expiry');
+        this.expire(cart.id);
       }
     }
   }
@@ -142,7 +142,6 @@ export class CartsService implements OnModuleDestroy {
     return {
       ...cart,
       lines: cart.lines.map((l) => ({ ...l })),
-      expiresAt: cart.lastActivityAt + RESERVATION_TTL_MS,
     };
   }
 }
