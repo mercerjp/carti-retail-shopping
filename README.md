@@ -6,7 +6,7 @@ See [`SOLUTION.md`](./SOLUTION.md) for design, API surface, catalogues, and assu
 
 ## Prerequisites
 
-- Node 18+ (tested on 20)
+- Node 20+ (required by NestJS 11)
 - npm 10+
 - For mobile: Expo Go on a phone, or an iOS Simulator / Android Emulator
 

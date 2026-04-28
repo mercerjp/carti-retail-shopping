@@ -13,7 +13,7 @@ The repo is an npm workspaces monorepo so a single `npm install` at the root set
 
 ### Prerequisites
 
-- Node 18+ (tested on 20)
+- Node 20+ (required by NestJS 11)
 - npm 10+
 - For mobile: Expo Go on a phone, or an iOS Simulator / Android Emulator
 
@@ -260,6 +260,13 @@ Scripts:
 | `npm run format:check` | Prettier-check (used in CI / pre-merge) |
 
 Each workspace also has its own `lint` / `lint:fix` script for targeted runs.
+
+### Dependencies & security
+
+- **BFF** runs on **NestJS 11** (Node ≥ 20, Express 5, RxJS 7.8).
+- **Mobile** runs on **Expo SDK 51** / RN 0.74.5. The jump to Expo 55 + RN 0.85 was attempted and deferred — Expo 55 ships paired with RN 0.83, RN 0.85 needs Expo SDK 56, and `jest-expo@55`'s winter runtime requires a non-trivial test-setup rewrite. Tracked in issue #19.
+- **TypeScript 6** across both workspaces. The `bff/` ESLint stack stays on ESLint 8 + typescript-eslint 7 (whose `<6.1.0` peer range admits TS 6).
+- **`npm audit` is clean of high and critical findings.** A small set of root-level `overrides` in the top `package.json` pins vulnerable transitive leaves (`@xmldom/xmldom`, `send`, `tar`, `glob`) that no upstream upgrade currently reaches. Remaining moderates are tracked but not blocking.
 
 ---
 
