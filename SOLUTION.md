@@ -182,6 +182,8 @@ The product and discount catalogues are reseeded on every boot from the `*.seed.
 
 Every `Cart` returned by the BFF carries `expiresAt: number` (epoch ms, computed as `lastActivityAt + RESERVATION_TTL_MS`) so the client can drive a visible countdown without polling. The field is derived in a single `view()` helper so it can never drift from the BFF's own TTL constant.
 
+**Assumption: any cart mutation restarts the timer.** Every successful `addItem` / `updateItem` / `removeItem` calls `touch(cart)` on the BFF, which advances `lastActivityAt` to "now" and therefore advances `expiresAt` by the full `RESERVATION_TTL_MS` (2 minutes). The mobile client receives the refreshed cart in the response, so the on-screen countdown resets to `2:00` on the next tick. An actively shopping customer is never penalised — the 2-minute TTL only counts inactivity since the last interaction.
+
 - A `<CartTimer />` component is mounted in the header of `ProductList`, `ProductDetail`, and `Cart` (not Checkout). It renders `mm:ss` until `cart.expiresAt`, driven by a 1-second ticker in `CartProvider` that only runs while a cart exists. It turns red below 30s.
 - Expiry is detected two ways:
   - **Proactive** — the ticker observes `Date.now() >= cart.expiresAt`.
