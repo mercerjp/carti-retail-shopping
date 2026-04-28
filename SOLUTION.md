@@ -278,3 +278,4 @@ Each workspace also has its own `lint` / `lint:fix` script for targeted runs.
 4. **Single currency (GBP).** Hardcoded on the order summary.
 5. **Sessionless.** The cart id is the only identifier and is held in React state on the client.
 6. **Simulated checkout.** No payment integration; a successful checkout deterministically returns an order summary.
+7. **Any cart mutation restarts the 2-minute timer.** Every successful add/update/remove `touch`es the cart on the BFF, advancing `expiresAt` by a full TTL — see _Mobile cart-expiry UX_ for details.
