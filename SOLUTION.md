@@ -62,7 +62,7 @@ The BFF base URL is read in this order:
 2. `expo.extra.apiBaseUrl` in `app.json`
 3. `http://localhost:3000/api` fallback
 
-Copy `.env.example` to `.env` to override. **On a real device** the URL must reach your laptop's LAN IP, not `localhost` — set `EXPO_PUBLIC_API_BASE_URL=http://192.168.x.x:3000/api`.
+Set `EXPO_PUBLIC_API_BASE_URL` (e.g. via a `.env` file or shell export) to override. **On a real device** the URL must reach your laptop's LAN IP, not `localhost` — set `EXPO_PUBLIC_API_BASE_URL=http://192.168.x.x:3000/api`.
 
 ### Tests
 
@@ -167,6 +167,7 @@ Per-screen async state (e.g. fetching the product list, loading product details)
 - `format.ts` for currency, `api.ts` for the typed fetch client. No styled component library — vanilla `StyleSheet` to keep the bundle small.
 - All interactive elements have `accessibilityRole`/`accessibilityLabel`.
 - Defensive UX: `−` is disabled at qty 1 (use the dedicated Remove button), `+` is disabled when no available stock remains, the empty-cart branch only renders if there's truly no cart or no lines, and the post-checkout navigation happens **before** the local cart state clears so the empty-cart screen never flashes.
+- `ProductListScreen` refetches via `useFocusEffect` so stock reflects the latest state after returning from checkout (the screen stays mounted in the back stack, so a mount-only effect would show stale stock).
 
 ---
 
