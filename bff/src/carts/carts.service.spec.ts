@@ -72,4 +72,28 @@ describe('CartsService', () => {
   it('throws NotFound for unknown cart', () => {
     expect(() => carts.get('nope')).toThrow(NotFoundException);
   });
+
+  describe('expiresAt projection', () => {
+    it('create() sets expiresAt = lastActivityAt + RESERVATION_TTL_MS', () => {
+      const cart = carts.create();
+      expect(cart.expiresAt).toBe(cart.lastActivityAt + RESERVATION_TTL_MS);
+    });
+
+    it('addItem advances expiresAt because touch() updates lastActivityAt', async () => {
+      const cart = carts.create();
+      const initialExpiresAt = cart.expiresAt;
+      // Wait at least 2ms to guarantee Date.now() ticks forward
+      await new Promise((r) => setTimeout(r, 5));
+      const updated = carts.addItem(cart.id, 'p-coffee-beans', 1);
+      expect(updated.expiresAt).toBeGreaterThan(initialExpiresAt);
+      expect(updated.expiresAt).toBe(updated.lastActivityAt + RESERVATION_TTL_MS);
+    });
+
+    it('get() of an active cart includes a populated expiresAt', () => {
+      const cart = carts.create();
+      const fetched = carts.get(cart.id);
+      expect(fetched.expiresAt).toBe(fetched.lastActivityAt + RESERVATION_TTL_MS);
+      expect(fetched.expiresAt).toBeGreaterThan(0);
+    });
+  });
 });

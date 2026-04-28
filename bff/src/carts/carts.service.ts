@@ -36,16 +36,17 @@ export class CartsService implements OnModuleDestroy {
       lines: [],
       createdAt: now,
       lastActivityAt: now,
+      expiresAt: now + RESERVATION_TTL_MS,
     };
     this.carts.set(cart.id, cart);
-    return { ...cart, lines: [...cart.lines] };
+    return this.view(cart);
   }
 
   get(id: string): Cart {
     this.sweepExpired();
     const cart = this.carts.get(id);
     if (!cart) throw new NotFoundException(`Cart ${id} not found`);
-    return { ...cart, lines: cart.lines.map((l) => ({ ...l })) };
+    return this.view(cart);
   }
 
   addItem(cartId: string, productId: string, quantity: number): Cart {
@@ -134,5 +135,14 @@ export class CartsService implements OnModuleDestroy {
 
   private touch(cart: Cart): void {
     cart.lastActivityAt = Date.now();
+    cart.expiresAt = cart.lastActivityAt + RESERVATION_TTL_MS;
+  }
+
+  private view(cart: Cart): Cart {
+    return {
+      ...cart,
+      lines: cart.lines.map((l) => ({ ...l })),
+      expiresAt: cart.lastActivityAt + RESERVATION_TTL_MS,
+    };
   }
 }

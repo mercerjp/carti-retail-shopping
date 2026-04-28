@@ -178,6 +178,17 @@ In-memory only, per the constraints. Each domain has its own service that owns a
 
 The product and discount catalogues are reseeded on every boot from the `*.seed.ts` files. Cart state is created on demand and lost on restart. Read-modify-write on `Product.stock` is safe under Node's single-threaded event loop because no `await` separates the read from the write inside `reserveStockOrThrow`. A multi-process deployment would need an atomic decrement (Redis `DECRBY`, SQL `UPDATE … WHERE stock >= ?`); the take-home runs single-process.
 
+### Mobile cart-expiry UX
+
+Every `Cart` returned by the BFF carries `expiresAt: number` (epoch ms, computed as `lastActivityAt + RESERVATION_TTL_MS`) so the client can drive a visible countdown without polling. The field is derived in a single `view()` helper so it can never drift from the BFF's own TTL constant.
+
+- A `<CartTimer />` component is mounted in the header of `ProductList`, `ProductDetail`, and `Cart` (not Checkout). It renders `mm:ss` until `cart.expiresAt`, driven by a 1-second ticker in `CartProvider` that only runs while a cart exists. It turns red below 30s.
+- Expiry is detected two ways:
+  - **Proactive** — the ticker observes `Date.now() >= cart.expiresAt`.
+  - **Reactive** — any mutation that rejects with `/is expired/i`.
+- On either path the provider clears the local `cart`, sets `expiredNotice`, and immediately auto-mints a new cart via the existing in-flight `createCart` ref so a proactive + reactive collision can't double-mint. **Previously-held line items are not restored** — the BFF has already released their reservations and the catalogue may have shifted, so re-adding is a deliberate user action.
+- `CartScreen` shows a dismissible banner sourced from `expiredNotice`. `ProductDetailScreen` swaps its raw cart-error line for the same notice when an `addItem` fails on an expired cart, since the context has already auto-recreated.
+
 ---
 
 ## Mobile app

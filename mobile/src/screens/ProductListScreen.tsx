@@ -12,6 +12,7 @@ import {
 } from 'react-native';
 import { api } from '../api';
 import { useCart } from '../CartContext';
+import { CartTimer } from '../components/CartTimer';
 import { formatGBP } from '../format';
 import { RootStackParamList } from '../navigation';
 import { theme } from '../theme';
@@ -44,13 +45,16 @@ export function ProductListScreen({ navigation }: Props) {
   useEffect(() => {
     navigation.setOptions({
       headerRight: () => (
-        <Pressable
-          onPress={() => navigation.navigate('Cart')}
-          accessibilityRole="button"
-          accessibilityLabel="View cart"
-        >
-          <Text style={styles.cartLink}>Cart{cart ? ` (${cartCount(cart.lines)})` : ''}</Text>
-        </Pressable>
+        <View style={styles.headerRight}>
+          <CartTimer />
+          <Pressable
+            onPress={() => navigation.navigate('Cart')}
+            accessibilityRole="button"
+            accessibilityLabel="View cart"
+          >
+            <Text style={styles.cartLink}>Cart{cart ? ` (${cartCount(cart.lines)})` : ''}</Text>
+          </Pressable>
+        </View>
       ),
     });
   }, [navigation, cart]);
@@ -136,4 +140,5 @@ const styles = StyleSheet.create({
   retry: { padding: theme.spacing.md },
   retryText: { color: theme.colors.accent, fontWeight: '700' },
   cartLink: { color: theme.colors.surface, fontWeight: '700', marginRight: theme.spacing.sm },
+  headerRight: { flexDirection: 'row', alignItems: 'center' },
 });

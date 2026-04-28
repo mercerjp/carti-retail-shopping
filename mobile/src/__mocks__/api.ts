@@ -29,6 +29,7 @@ function makeCart(id: string): Cart {
     lines: [],
     createdAt: Date.now(),
     lastActivityAt: Date.now(),
+    expiresAt: Date.now() + 2 * 60 * 1000,
   };
 }
 

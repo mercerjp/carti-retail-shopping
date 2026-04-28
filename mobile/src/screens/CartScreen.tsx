@@ -23,7 +23,8 @@ interface EnrichedLine {
 }
 
 export function CartScreen({ navigation }: Props) {
-  const { cart, error, loading, updateItem, removeItem, clear } = useCart();
+  const { cart, error, loading, updateItem, removeItem, clear, expiredNotice, dismissExpiredNotice } =
+    useCart();
   const [lines, setLines] = useState<EnrichedLine[] | null>(null);
   const [resolveError, setResolveError] = useState<string | null>(null);
   const [checkingOut, setCheckingOut] = useState(false);
@@ -66,13 +67,29 @@ export function CartScreen({ navigation }: Props) {
     }
   };
 
+  const banner = expiredNotice ? (
+    <View style={styles.banner} accessibilityRole="alert">
+      <Text style={styles.bannerText}>{expiredNotice}</Text>
+      <Pressable
+        onPress={dismissExpiredNotice}
+        accessibilityRole="button"
+        accessibilityLabel="Dismiss"
+      >
+        <Text style={styles.bannerDismiss}>Dismiss</Text>
+      </Pressable>
+    </View>
+  ) : null;
+
   if (!cart || (lines && lines.length === 0)) {
     return (
-      <View style={styles.empty}>
-        <Text style={styles.emptyText}>Your cart is empty.</Text>
-        <Pressable onPress={() => navigation.navigate('ProductList')}>
-          <Text style={styles.link}>Browse products</Text>
-        </Pressable>
+      <View style={styles.container}>
+        {banner}
+        <View style={styles.empty}>
+          <Text style={styles.emptyText}>Your cart is empty.</Text>
+          <Pressable onPress={() => navigation.navigate('ProductList')}>
+            <Text style={styles.link}>Browse products</Text>
+          </Pressable>
+        </View>
       </View>
     );
   }
@@ -103,6 +120,7 @@ export function CartScreen({ navigation }: Props) {
 
   return (
     <View style={styles.container}>
+      {banner}
       <FlatList
         data={lines ?? []}
         keyExtractor={(l) => l.product.id}
@@ -236,4 +254,15 @@ const styles = StyleSheet.create({
   pressed: { backgroundColor: theme.colors.borderStrong, opacity: 0.9 },
   disabled: { backgroundColor: theme.colors.disabled },
   checkoutText: { color: '#FFFFFF', fontWeight: '700', fontSize: 16, letterSpacing: 0.3 },
+  banner: {
+    backgroundColor: '#fef3c7',
+    borderBottomWidth: 1,
+    borderBottomColor: '#fcd34d',
+    padding: theme.spacing.md,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: theme.spacing.md,
+  },
+  bannerText: { flex: 1, color: '#78350f', fontSize: 14 },
+  bannerDismiss: { color: '#78350f', fontWeight: '700' },
 });
