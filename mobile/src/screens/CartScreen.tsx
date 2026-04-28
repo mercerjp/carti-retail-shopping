@@ -54,8 +54,10 @@ export function CartScreen({ navigation }: Props) {
     setCheckoutError(null);
     try {
       const order = await api.checkout(cart.id);
-      clear();
+      // Navigate first, THEN clear — otherwise the empty-cart branch flashes between
+      // the state update and the route change.
       navigation.replace('Checkout', { order });
+      clear();
     } catch (e) {
       setCheckoutError(e instanceof Error ? e.message : 'Checkout failed');
     } finally {
@@ -115,18 +117,18 @@ export function CartScreen({ navigation }: Props) {
             <View style={styles.qtyControls}>
               <Pressable
                 onPress={() => updateItem(item.product.id, item.quantity - 1)}
-                style={styles.qtyBtn}
+                style={[styles.qtyBtn, item.quantity <= 1 && styles.qtyBtnDisabled]}
                 accessibilityLabel="Decrease quantity"
-                disabled={loading}
+                disabled={loading || item.quantity <= 1}
               >
                 <Text style={styles.qtyBtnText}>−</Text>
               </Pressable>
               <Text style={styles.qty}>{item.quantity}</Text>
               <Pressable
                 onPress={() => updateItem(item.product.id, item.quantity + 1)}
-                style={styles.qtyBtn}
+                style={[styles.qtyBtn, item.product.stock <= 0 && styles.qtyBtnDisabled]}
                 accessibilityLabel="Increase quantity"
-                disabled={loading}
+                disabled={loading || item.product.stock <= 0}
               >
                 <Text style={styles.qtyBtnText}>+</Text>
               </Pressable>
@@ -198,6 +200,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   qtyBtnText: { fontSize: 18, fontWeight: '600' },
+  qtyBtnDisabled: { opacity: 0.4 },
   qty: { width: 24, textAlign: 'center', fontSize: 15 },
   remove: { color: '#b91c1c', fontWeight: '600' },
   footer: {
