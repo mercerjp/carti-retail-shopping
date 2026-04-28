@@ -135,5 +135,5 @@ const styles = StyleSheet.create({
   error: { color: theme.colors.danger, textAlign: 'center', marginBottom: theme.spacing.md },
   retry: { padding: theme.spacing.md },
   retryText: { color: theme.colors.accent, fontWeight: '700' },
-  cartLink: { color: '#FFFFFF', fontWeight: '700', marginRight: theme.spacing.sm },
+  cartLink: { color: theme.colors.surface, fontWeight: '700', marginRight: theme.spacing.sm },
 });
