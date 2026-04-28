@@ -104,4 +104,46 @@ describe('DiscountEngine', () => {
     );
     expect(result.totalCents).toBeGreaterThanOrEqual(0);
   });
+
+  it('handles an empty cart cleanly', () => {
+    const result = engine.price([]);
+    expect(result.subtotalCents).toBe(0);
+    expect(result.applied).toEqual([]);
+    expect(result.totalCents).toBe(0);
+  });
+
+  it('skips inactive discounts', () => {
+    const discounts = new DiscountsService();
+    // mutate one of the seed discounts to inactive — exercises the active() filter
+    (discounts as unknown as { discounts: Map<string, { active: boolean }> })
+      .discounts.get('d-coffee-20')!.active = false;
+    const customEngine = new DiscountEngine(discounts);
+    const result = customEngine.price(
+      lines({
+        product: product({ id: 'p-coffee-beans', priceCents: 1299 }),
+        quantity: 1,
+      }),
+    );
+    expect(result.applied.find((a) => a.discountId === 'd-coffee-20')).toBeUndefined();
+  });
+
+  it('FIXED_OFF_ORDER caps at remaining subtotal (overflow clamp)', () => {
+    // Construct a tiny cart that triggers FIXED_OFF_ORDER via a contrived line.
+    // Subtotal must clear minSubtotalCents (3000) but the remaining post-product subtotal must be small enough to clamp.
+    // Use a single line of priceCents=3001 — no product-scoped match, fixed -500 applied.
+    const result = engine.price(
+      lines({ product: product({ id: 'p-x', priceCents: 3001 }), quantity: 1 }),
+    );
+    const fixed = result.applied.find((a) => a.discountId === 'd-order-5-over-30');
+    expect(fixed?.amountCents).toBe(500);
+    expect(result.totalCents).toBe(3001 - 500);
+  });
+
+  it('PERCENT_OFF_PRODUCT rounds to nearest cent', () => {
+    // 1299 * 20 / 100 = 259.8 → rounded to 260
+    const result = engine.price(
+      lines({ product: product({ id: 'p-coffee-beans', priceCents: 1299 }), quantity: 1 }),
+    );
+    expect(result.applied.find((a) => a.discountId === 'd-coffee-20')?.amountCents).toBe(260);
+  });
 });

@@ -3,7 +3,8 @@
  *
  * - PERCENT_OFF_PRODUCT: e.g. 20% off coffee beans
  * - FIXED_OFF_ORDER: e.g. £5 off when subtotal >= £30
- * - BUY_X_GET_Y_FREE: e.g. buy 2 oat milks, get 1 free (cheapest among the matching items is free)
+ * - BUY_X_GET_Y_FREE: classic "buy X, get Y free" — for every (X+Y) in the cart,
+ *     Y are free. e.g. buyQuantity=2, freeQuantity=1 means qty 3 → pay for 2.
  * - BUNDLE: e.g. coffee + oat milk together = £2 off
  */
 export type DiscountKind =
