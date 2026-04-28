@@ -6,3 +6,6 @@ build/
 .env
 .expo/
 coverage/
+CLAUDE.md
+instructions.pdf
+.claude
